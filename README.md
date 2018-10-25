@@ -1,2 +1,2 @@
 # apiz-ng
-An API manager based on Proxy
+A library template for dulu
