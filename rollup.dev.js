@@ -1,5 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
+import { relative } from 'path';
 import { name } from './package.json';
 
 export default [
@@ -22,7 +23,7 @@ export default [
 			file: 'example/scripts/apiz.umd.js',
 			format: 'umd',
 			sourcemap: true,
-			sourcemapPathTransform: () => 'apiz.js'
+			sourcemapPathTransform: path => ~path.indexOf('index') ? 'apiz.js' : relative('src', path)
 		}
 	}
 ];

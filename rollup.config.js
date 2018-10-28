@@ -1,6 +1,7 @@
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
 import minify from 'rollup-plugin-babel-minify';
+import { relative } from 'path';
 import { browser, module, name, version, license, author, homepage } from './package.json';
 
 /**
@@ -32,7 +33,7 @@ export default [
 		output: [
 			{
 				banner,
-				file: module,
+				file: module['apiz'],
 				format: 'esm',
 				sourcemap: true
 			},
@@ -41,6 +42,28 @@ export default [
 				banner,
 				file: browser,
 				format: 'umd',
+				sourcemap: true
+			}
+		]
+	},
+	{
+		input: 'src/core.js',
+		plugins: [
+			replace({
+				DEBUG: JSON.stringify(false)
+			}),
+			babel({
+				exclude: 'node_modules/**'
+			})
+		],
+		treeshake: {
+			propertyReadSideEffects: false
+		},
+		output: [
+			{
+				banner,
+				file: module['apiz/core'],
+				format: 'esm',
 				sourcemap: true
 			}
 		]
@@ -65,7 +88,7 @@ export default [
 			format: 'umd',
 			sourcemap: true,
 			// sourcemap生成之后在devtools本来看到的文件是src/index.js, 这个选项可以变成apiz.js
-			sourcemapPathTransform: () => 'apiz.js'
+			sourcemapPathTransform: path => ~path.indexOf('index') ? 'apiz.js' : relative('src', path)
 		}
 	}
 ];
