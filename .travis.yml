@@ -9,6 +9,8 @@ cache:
 script:
 - npm run lint
 - npm test
+after_success:
+- npm run coverage
 git:
   depth: 1
 notifications:
