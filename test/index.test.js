@@ -108,7 +108,6 @@ test.serial('meta data with invalid HTTP method', t => {
 
 test.serial('global config', t => {
 	const querystring = o => 'querystring';
-	const bodyParser = o => 'body';
 	const defaultType = 'defaultType';
 	const paramRegex = /{(\w+)}/g;
 	const apiMeta = {
@@ -122,13 +121,14 @@ test.serial('global config', t => {
 
 	config({
 		querystring,
-		bodyParser,
 		paramRegex,
 		defaultType,
 		client: {
 			post(url, body) {
 				t.is(url, 'http://www.a.com/test/CSAPP/test?querystring');
-				t.is(body, 'body');
+				t.deepEqual(body, {
+					body: 'test'
+				});
 			}
 		}
 	});
@@ -164,7 +164,6 @@ test.serial('global config', t => {
 
 test.serial('group config', t => {
 	const querystring = o => 'querystring';
-	const bodyParser = o => 'body';
 	const defaultType = 'defaultType';
 	const paramRegex = /{(\w+)}/g;
 	const apiMeta = {
@@ -180,13 +179,12 @@ test.serial('group config', t => {
 
 	config({
 		querystring,
-		bodyParser,
 		paramRegex,
 		defaultType,
 		client: {
 			post(url, body) {
 				t.is(url, 'http://www.a.com/test/CSAPP/test?querystring');
-				t.is(body, 'body');
+				t.is(body, 'test');
 				t.fail();
 			}
 		}
@@ -194,12 +192,13 @@ test.serial('group config', t => {
 
 	const apis = new APIz(apiMeta, {
 		querystring: o => 'gquerystring',
-		bodyParser: o => 'gbody',
 		paramRegex: /:(book)/g,
 		client: {
 			post(url, body) {
 				t.is(url, 'http://www.a.com/test/CSAPP/test?gquerystring');
-				t.is(body, 'gbody');
+				t.deepEqual(body, {
+					body: 'test'
+				});
 			}
 		}
 	});
@@ -553,6 +552,36 @@ test.serial('invalid querystring', t => {
 	);
 });
 
+test.serial('querystring type is string', t => {
+	config({
+		querystring,
+		immutableMeta: true,
+		client: {
+			get(url) {
+				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key0=000&key1=111');
+			}
+		}
+	});
+
+	const apis = new APIz(
+		{
+			getBook: {
+				path: '/test/:book/aaa',
+				pathParams: true
+			}
+		},
+		{
+			baseURL: 'http://www.a.com'
+		}
+	);
+
+	apis.getBook(
+		{
+			book: 'CSAPP'
+		}, 'key0=000&key1=111'
+	);
+});
+
 test.serial('querystring has array', t => {
 	config({
 		querystring,
@@ -585,6 +614,77 @@ test.serial('querystring has array', t => {
 			key2: [1, 2, 3]
 		}
 	);
+});
+
+
+test.serial('invalid params', t => {
+	config({
+		querystring,
+		immutableMeta: true,
+		client: {
+			get(url) {
+				t.fail();
+			}
+		}
+	});
+
+	const apis = new APIz(
+		{
+			getBook: {
+				path: '/test/:book/aaa',
+				pathParams: true
+			}
+		},
+		{
+			baseURL: 'http://www.a.com'
+		}
+	);
+
+	try {
+		apis.getBook(
+			{
+				nobook: 'CSAPP'
+			}
+		);
+	} catch (e) {
+		t.regex(e.message, /Can't find a property/);
+	}
+});
+
+test.serial('body with type', t => {
+	config({
+		querystring,
+		immutableMeta: true,
+		client: {
+			post(url, options, type, isOptions) {
+				t.is(url, 'http://www.a.com/test/CSAPP/aaa');
+				t.deepEqual(options, {
+					body: 'post'
+				});
+				t.is(type, 'form');
+				t.false(isOptions);
+			}
+		}
+	});
+
+	const apis = new APIz(
+		{
+			addBook: {
+				path: '/test/:book/aaa',
+				method: 'post',
+				pathParams: true
+			}
+		},
+		{
+			baseURL: 'http://www.a.com'
+		}
+	);
+
+	apis.addBook({
+		body: 'post'
+	}, {
+		book: 'CSAPP'
+	}, 'form');
 });
 
 test.serial('use preserved key', t => {
@@ -695,22 +795,22 @@ test.serial('all options', t => {
 				switch (count++) {
 					case 7:
 						t.is(url, 'http://www.a.com/test/000/aaa/111?key0=000&key1=111');
-						t.true(typeof bodyOrOptions === 'string');
+						t.true(isObj(bodyOrOptions));
 						t.is(type, 'json');
 						break;
 					case 8:
 						t.is(url, 'http://www.a.com/test/000/aaa/111');
-						t.true(typeof bodyOrOptions === 'string');
+						t.true(isObj(bodyOrOptions));
 						t.is(type, 'json');
 						break;
 					case 9:
 						t.is(url, 'http://www.a.com/test/000/aaa/111');
-						t.is(bodyOrOptions, 'null');
+						t.is(bodyOrOptions, null);
 						t.is(type, 'json');
 						break;
 					case 10:
 						t.is(url, 'http://www.a.com/test');
-						t.true(typeof bodyOrOptions === 'string');
+						t.true(isObj(bodyOrOptions));
 						t.is(type, undefined);
 						break;
 					case 11:
@@ -720,7 +820,7 @@ test.serial('all options', t => {
 						break;
 					case 12:
 						t.is(url, 'http://www.a.com/test?key0=000&key1=111');
-						t.true(typeof bodyOrOptions === 'string');
+						t.true(isObj(bodyOrOptions));
 						t.is(type, undefined);
 						break;
 

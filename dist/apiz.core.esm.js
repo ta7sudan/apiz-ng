@@ -17,34 +17,27 @@ const isEnumerable = Map.call.bind(Object.prototype.propertyIsEnumerable);
 let defaultType,
     globalQuerystring,
     globalParamRegex,
-    globalBodyPareser,
     globalClient,
-    globalImmutableMeta = false;
-const defaultParamRegex = /:((\w|-)+)/g,
+    globalImmutableMeta = false; // ES2018+, 是讲这个特性没法被babel转译,
+// 那既然都用ES2018了, 不如把能用的特性都用上好了...
+
+const defaultParamRegex = /(?<=\/):((\w|-)+)/g,
       methodMap = {
   GET: noBodyRequest,
   HEAD: noBodyRequest,
   POST: bodyRequest,
   PUT: bodyRequest,
   PATCH: bodyRequest,
-  OPTIONS: bodyRequest,
-  DELETE: bodyRequest
+  // 尽管浏览器支持OPTIONS和DELETE带body, 但是考虑到不常用,
+  // 还是默认它们不带body, 如果需要的话, 可以直接开启完整选项加入body
+  // 有空改成可配置吧
+  OPTIONS: noBodyRequest,
+  DELETE: noBodyRequest
 };
-
-function defaultBodyParser(data, type = 'json', querystring) {
-  if (type === 'json') {
-    return JSON.stringify(data);
-  } else if (type === 'form') {
-    return querystring(data);
-  } else {
-    return data;
-  }
-}
 
 function parseApiInfo(name, rawInfo, {
   baseURL: gBaseURL,
   paramRegex,
-  bodyParser,
   querystring,
   client
 }) {
@@ -70,7 +63,7 @@ function parseApiInfo(name, rawInfo, {
   if (isStr(url)) {
     info.url = url;
   } else if (isStr(bURL)) {
-    info.url = (bURL + (path || '')).replace(/:?\/\//g, m => ~m.indexOf(':') ? m : '/');
+    info.url = (bURL + (path || '')).replace(/(?<!:)(\/\/)/g, '/');
   } else {
     throw new Error(`API "${name}" must set url or baseURL correctly.`);
   }
@@ -78,7 +71,7 @@ function parseApiInfo(name, rawInfo, {
   method = method.toUpperCase();
   let methodLowerCase = method.toLowerCase();
 
-  if (!(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].indexOf(method) !== -1)) {
+  if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].includes(method)) {
     throw new Error(`Unsupported HTTP method: ${method}.`);
   }
 
@@ -93,7 +86,6 @@ function parseApiInfo(name, rawInfo, {
   info.pathParams = pathParams;
   info.regex = paramRegex;
   info.querystring = querystring;
-  info.bodyParser = bodyParser;
   info.init = true;
   return info;
 }
@@ -136,10 +128,6 @@ function noBodyRequest(...args) {
     query = args[0];
   }
 
-  if (!query && !params) {
-    return this[methodLowerCase](url);
-  }
-
   if (params) {
     url = url.replace(regex, replaceParams(params));
   } else if (pathParams) {
@@ -148,7 +136,7 @@ function noBodyRequest(...args) {
 
   if (query) {
     qs = querystring(query);
-    url = ~url.indexOf('?') ? `${url}&${qs}` : `${url}?${qs}`;
+    url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
   }
 
   return this[methodLowerCase](url);
@@ -157,47 +145,47 @@ function noBodyRequest(...args) {
 function bodyRequest(...args) {
   const {
     methodLowerCase,
-    type,
+    type: defaultType,
     pathParams,
     regex,
-    querystring,
-    bodyParser
+    querystring
   } = this;
-  let rawBody,
-      params,
+  let params,
       query,
       body,
+      type,
       qs,
       url = this.url;
 
   if (args[1] === true) {
-    return this[methodLowerCase](url, args[0], type);
+    return this[methodLowerCase](url, args[0], type, true);
   } else if (pathParams) {
     params = args[1];
     query = args[2];
+    type = args[3] || defaultType;
   } else {
     query = args[1];
+    type = args[2] || defaultType;
   }
 
-  rawBody = args[0];
-  body = bodyParser(rawBody, type, querystring);
+  body = args[0];
 
   if (params) {
     url = url.replace(regex, replaceParams(params));
   } else if (pathParams) {
     throw new Error('Path params is required.');
-  }
+  } // 这里实际上会造成带body的query的集合和不带body的query的集合不一致,
+  // 不过考虑实际情况这样的不一致也是可以接受
 
-  if (!query && !params) {
-    return this[methodLowerCase](url, body, type);
-  }
 
-  if (query) {
+  if (isStr(query) && !query.includes('=')) {
+    type = query;
+  } else if (query) {
     qs = querystring(query);
-    url = ~url.indexOf('?') ? `${url}&${qs}` : `${url}?${qs}`;
+    url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
   }
 
-  return this[methodLowerCase](url, body, type);
+  return this[methodLowerCase](url, body, type, false);
 }
 
 function createAPI(info) {
@@ -217,7 +205,6 @@ function APIz(apiMeta, options) {
   let baseURL,
       immutableMeta,
       paramRegex,
-      bodyParser,
       querystring,
       client,
       meta = {};
@@ -226,7 +213,6 @@ function APIz(apiMeta, options) {
     baseURL = baseURL,
     immutableMeta = globalImmutableMeta,
     paramRegex = globalParamRegex || defaultParamRegex,
-    bodyParser = globalBodyPareser || defaultBodyParser,
     querystring = globalQuerystring,
     client = globalClient
   } = options || {});
@@ -242,7 +228,6 @@ function APIz(apiMeta, options) {
   const groupOptions = {
     baseURL,
     paramRegex,
-    bodyParser,
     querystring,
     client
   };
@@ -255,7 +240,7 @@ function APIz(apiMeta, options) {
       if (isObj(apiMeta[key])) {
         meta[key] = parseApiInfo(key, apiMeta[key], groupOptions);
       } else if (key !== '_baseURL') {
-        console.warn(`The ${key} in config is not an object.`);
+        console.warn(`The ${key} in meta is not an object.`);
       }
     }
   }
@@ -268,8 +253,9 @@ function APIz(apiMeta, options) {
         meta[key] = parseApiInfo(key, meta[key], groupOptions);
       }
 
-      Reflect.set(receiver, key, createAPI(meta[key]));
-      return Reflect.get(receiver, key);
+      const apiFn = createAPI(meta[key]);
+      Reflect.set(receiver, key, apiFn);
+      return apiFn;
     },
 
     getPrototypeOf() {
@@ -297,7 +283,6 @@ function APIz(apiMeta, options) {
 function config({
   querystring,
   paramRegex,
-  bodyParser,
   immutableMeta,
   client,
   reset,
@@ -306,12 +291,11 @@ function config({
   reset: true
 }) {
   isFn(querystring) && (globalQuerystring = querystring);
-  isFn(bodyParser) && (globalBodyPareser = bodyParser);
   paramRegex instanceof RegExp && (globalParamRegex = paramRegex);
   globalImmutableMeta = immutableMeta;
   globalClient = client;
   defaultType = dt;
-  reset && (globalQuerystring = globalParamRegex = globalBodyPareser = globalClient = defaultType = undefined, globalImmutableMeta = false);
+  reset && (globalQuerystring = globalParamRegex = globalClient = defaultType = undefined, globalImmutableMeta = false);
 }
 
 export { APIz, config };

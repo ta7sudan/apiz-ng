@@ -10,6 +10,8 @@ export function querystring(obj) {
 						: `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`
 			)
 			.join('&');
+	} else if (typeof obj === 'string') {
+		return obj;
 	} else {
 		return JSON.stringify(obj);
 	}

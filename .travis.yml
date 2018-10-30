@@ -22,7 +22,7 @@ deploy:
   skip_cleanup: true
   email: ta7sudan@gmail.com
   api_key:
-    secure: todo
+    secure: eZrOfBTcOTZPsdFQAWHZ5LWEBb9eiqmYlkWxZB5ksDv/sh93oqLMzHoIbmZeoEbv40yD5K4crfkDNcEh/L2u3XXDu15UkKZHf99U/7k9LuipAZKil0E0xc/8uZiEARnM1ovlB6Sc70E0/zk/Q53LA8mTkJW5OJjNv6vdc/kqBgO64OWgcmlgrkVBdWRM+C5B+r1vAfPXNZkTuFEnu5fS30CCG+blirmLdh92fPbyRjruCjvAQqx/yKyRVbhqONjv82F+sJGKOqmlUmdHW1bXWbU8srgypmgFGGUpNEJshXJrLn+FQDhesBsJb49OrmDa1CFtxR/ELe/VenfM8VrSH8GGZJscPbAo5Z80nAonqqg/LINsFaaDbBB8A3rbSAPlaZN42xTO4m/HFajcKdjcTEW14kVAZJMlvxERyTjYUguD2WAaG92mvUqHyad6IFcBz+aIRTMLcJujYNtOnlyuhcJLrgda16HmfqYGJjmf2gVZlbkZvtW+jEOyT3BZiBl+vDjmkOfuQ7SNhiC0gsw06JN942vo8HrnDc55qe3VHRec9Xsqjz+LfFfetuLwi8Ny5p3gSsa9K0MXz51v4nQvKU4s7eCI+PbxSD1fM9oMTVRBMsL+lFVUcSeJcyiO49ZcGFsE9vuBWqxnTgLdHEDubAj+wWTc5ZK6pYC+vqgMw5Y=
   on:
     tags: true
     repo: ta7sudan/apiz-ng
