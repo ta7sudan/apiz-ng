@@ -36,30 +36,7 @@ export default [
 		},
 		output: [
 			{
-				banner,
-				file: module['apiz'],
-				format: 'esm',
-				sourcemap: true
-			}
-		]
-	},
-	{
-		input: 'src/core.js',
-		plugins: [
-			replace({
-				DEBUG: JSON.stringify(false)
-			}),
-			babel({
-				exclude: 'node_modules/**'
-			})
-		],
-		treeshake: {
-			propertyReadSideEffects: false
-		},
-		output: [
-			{
-				banner,
-				file: module['apiz/core'],
+				file: module,
 				format: 'esm',
 				sourcemap: true
 			}

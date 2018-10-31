@@ -3,10 +3,7 @@
   "version": "0.1.1",
   "description": "An API manager based on Proxy",
   "main": "dist/apiz.cjs.js",
-  "module": {
-    "apiz": "dist/apiz.esm.js",
-    "apiz/core": "dist/apiz.core.esm.js"
-  },
+  "module": "dist/apiz.esm.js",
   "browser": "dist/apiz.min.js",
   "sideEffects": false,
   "types": "types/index.d.ts",
@@ -77,7 +74,7 @@
     "@babel/polyfill": "^7.0.0",
     "@babel/preset-env": "^7.1.0",
     "@babel/register": "^7.0.0",
-    "apiz-browser-client": "^0.1.6",
+    "apiz-browser-client": "^0.1.7",
     "apiz-node-client": "^0.1.4",
     "ava": "1.0.0-rc.1",
     "codecov": "^3.1.0",

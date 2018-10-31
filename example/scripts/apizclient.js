@@ -4,12 +4,6 @@
   (global.apizclient = factory());
 }(this, (function () { 'use strict';
 
-  /**
-   * @Version 0.1.6
-   * @Author: ta7sudan
-   * @Repo: https://github.com/ta7sudan/apiz-browser-client#readme
-   * @License: MIT
-   */
   function _extends() {
     _extends = Object.assign || function (target) {
       for (var i = 1; i < arguments.length; i++) {
@@ -27,13 +21,6 @@
 
     return _extends.apply(this, arguments);
   }
-
-  /**
-   * @Version 0.3.7
-   * @Author: ta7sudan
-   * @Repo: https://github.com/ta7sudan/tinyjx#readme
-   * @License: MIT
-   */
 
   /* global false */
   const isFn = fn => typeof fn === 'function';

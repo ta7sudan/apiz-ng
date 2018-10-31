@@ -1,9 +1,3 @@
-/**
- * @Version 0.1.1
- * @Author: ta7sudan
- * @Repo: https://github.com/ta7sudan/apiz-ng#readme
- * @License: MIT
- */
 /* global false */
 const toString = Map.call.bind(Object.prototype.toString);
 
