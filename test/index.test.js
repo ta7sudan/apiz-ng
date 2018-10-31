@@ -1,7 +1,6 @@
 import test from 'ava';
 import { APIz, config } from '../src/core';
 import { querystring } from '../src/querystring';
-// import './_pock';
 
 /* global todo */
 

@@ -77,7 +77,7 @@
     "@babel/polyfill": "^7.0.0",
     "@babel/preset-env": "^7.1.0",
     "@babel/register": "^7.0.0",
-    "apiz-browser-client": "^0.1.5",
+    "apiz-browser-client": "^0.1.6",
     "apiz-node-client": "^0.1.4",
     "ava": "1.0.0-rc.1",
     "codecov": "^3.1.0",

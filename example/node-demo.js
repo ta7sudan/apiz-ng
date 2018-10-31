@@ -47,14 +47,14 @@ const { APIz, config } = require('./scripts/apiz.umd');
 		})
 	});
 
-	let resp = await apis.getBook({
-		bookName: 'CSAPP',
-		other: 'test'
-	}, {
-			version: 2,
-			otherKey: '测试'
-		});
-	console.log(resp.body);
+	// let resp = await apis.getBook({
+	// 	bookName: 'CSAPP',
+	// 	other: 'test'
+	// }, {
+	// 		version: 2,
+	// 		otherKey: '测试'
+	// 	});
+	// console.log(resp.body);
 
 
 	// resp = await apis.getBook({
@@ -194,7 +194,7 @@ const { APIz, config } = require('./scripts/apiz.umd');
 	// resp = await apis.updateBook(buf, {
 	// 	bookName: 'buf'
 	// }, {
-	// 	key0: 000,
+	// 	key0: '000',
 	// 	key1: 111
 	// });
 	// console.log(resp.body);
@@ -213,7 +213,7 @@ const { APIz, config } = require('./scripts/apiz.umd');
 
 	// const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
 	// resp = await apis.addBook(buf, {
-	// 	key0: 000,
+	// 	key0: '000',
 	// 	key1: 111
 	// }, 'json');
 	// console.log(resp.body);
@@ -228,7 +228,7 @@ const { APIz, config } = require('./scripts/apiz.umd');
 
 	// const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
 	// resp = await apis.addBook(buf, {
-	// 	key0: 000,
+	// 	key0: '000',
 	// 	key1: 111
 	// });
 	// console.log(resp.body);
