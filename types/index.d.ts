@@ -38,11 +38,11 @@ interface APIzClient {
 	patch?(url: string, bodyOrOptions: any, type: string, isOptions: boolean): Promise<any>;
 }
 
-interface APIzNoBodyRequest {
+interface APIzNoBodyRequest extends APIzRawOptionsRequest {
 	(params?: object, query?: string | object): Promise<any>;
 }
 
-interface APIzBodyRequest {
+interface APIzBodyRequest extends APIzRawOptionsRequest {
 	(body: any, params?: object, query?: string | object, type?: string): Promise<any>;
 }
 
@@ -55,7 +55,7 @@ export class APIz {
 	constructor(apiMeta?: APIMeta, groupOptions?: GroupOptions);
 	add(key: string, info: APIInfo): void;
 	remove(key: string): void;
-	[key: string]: function | APIzBodyRequest | APIzNoBodyRequest | APIzRawOptionsRequest;
+	[key: string]: function | APIzBodyRequest | APIzNoBodyRequest;
 }
 
 export function config(options?: GlobalOptions): void;
