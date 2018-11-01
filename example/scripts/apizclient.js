@@ -401,7 +401,7 @@
 
         success(data, xhr) {
           try {
-            afterResponse(data, xhr);
+            typeof afterResponse === 'function' && afterResponse(data, xhr);
           } catch (e) {
             rj(e);
             return;
