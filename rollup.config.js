@@ -2,7 +2,7 @@ import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
 import minify from 'rollup-plugin-babel-minify';
 import { relative } from 'path';
-import { browser, module, main, name, version, license, author, homepage } from './package.json';
+import { browser, module, main, version, license, author, homepage } from './package.json';
 
 /**
  * 如果用babel-minify压缩的话, banner字符串的开头和结尾谜之不能换行
@@ -41,6 +41,13 @@ export default [
 				file: module,
 				format: 'esm',
 				sourcemap: true
+			},
+			{
+				name: 'apizng',
+				// banner,
+				file: browser,
+				format: 'umd',
+				sourcemap: true
 			}
 		]
 	},
@@ -62,17 +69,16 @@ export default [
 		},
 		output: [
 			{
-				name,
-				// banner,
-				file: browser,
+				name: 'apizng',
+				banner,
+				file: 'dist/apiz.min.js',
 				format: 'umd',
 				sourcemap: true,
 				// sourcemap生成之后在devtools本来看到的文件是src/index.js, 这个选项可以变成apiz.js
 				sourcemapPathTransform: path => (~path.indexOf('index') ? 'apiz.js' : relative('src', path))
 			},
 			{
-				name,
-				// banner,
+				banner,
 				file: main,
 				format: 'cjs',
 				sourcemap: true
