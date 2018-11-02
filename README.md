@@ -335,6 +335,12 @@ const apis = new APIz(meta);
 
 
 
+## TODO
+
+因为 APIz 实例上的方法都是 lazy load 的, 所以通过 `Object.keys()` 来获取所有方法是不现实的, 目前也没有方法可以遍历到所有的方法, 所以考虑之后提供一个 API 暴露所有方法名.
+
+
+
 ## Misc
 
 建议将 API 的配置分成多个文件, 存放在单独的目录, 通过扫描目录读取文件合并成一个 `APIMeta` 对象.
