@@ -10,6 +10,7 @@ interface APIInfo {
 	method?: string;
 	type?: string;
 	pathParams?: boolean;
+	meta?: object;
 }
 
 interface GroupOptions {
@@ -28,14 +29,31 @@ interface GlobalOptions {
 	querystring?(obj: object): string;
 }
 
+interface NoBodyOptions {
+	url: string;
+	name: string;
+	meta: any;
+	options?: object;
+}
+
+interface BodyOptions {
+	url: string;
+	type: string;
+	name: string;
+	meta: any;
+	body: any;
+	options: object;
+}
+
+
 interface APIzClient {
-	get?(url: string, options?: object): Promise<any>;
-	head?(url: string, options?: object): Promise<any>;
-	delete?(url: string, options?: object): Promise<any>;
-	options?(url: string, options?: object): Promise<any>;
-	post?(url: string, bodyOrOptions: any, type: string, isOptions: boolean): Promise<any>;
-	put?(url: string, bodyOrOptions: any, type: string, isOptions: boolean): Promise<any>;
-	patch?(url: string, bodyOrOptions: any, type: string, isOptions: boolean): Promise<any>;
+	get?(options: NoBodyOptions): Promise<any>;
+	head?(options: NoBodyOptions): Promise<any>;
+	delete?(options: NoBodyOptions): Promise<any>;
+	options?(options: NoBodyOptions): Promise<any>;
+	post?(options: BodyOptions): Promise<any>;
+	put?(options: BodyOptions): Promise<any>;
+	patch?(options: BodyOptions): Promise<any>;
 }
 
 interface APIzNoBodyRequest extends APIzRawOptionsRequest {
@@ -48,6 +66,11 @@ interface APIzBodyRequest extends APIzRawOptionsRequest {
 
 interface APIzRawOptionsRequest {
 	(options: object, flag: boolean): Promise<any>;
+	url: string;
+	method: string;
+	type: string;
+	pathParams: boolean;
+	meta: any;
 }
 
 

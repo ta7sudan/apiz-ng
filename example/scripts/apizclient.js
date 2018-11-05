@@ -4,24 +4,6 @@
   (global.apizclient = factory());
 }(this, (function () { 'use strict';
 
-  function _extends() {
-    _extends = Object.assign || function (target) {
-      for (var i = 1; i < arguments.length; i++) {
-        var source = arguments[i];
-
-        for (var key in source) {
-          if (Object.prototype.hasOwnProperty.call(source, key)) {
-            target[key] = source[key];
-          }
-        }
-      }
-
-      return target;
-    };
-
-    return _extends.apply(this, arguments);
-  }
-
   /* global false */
   const isFn = fn => typeof fn === 'function';
 
@@ -379,15 +361,42 @@
     };
   }
 
-  function request({
-    url,
-    method,
-    type,
-    data,
-    options: options$$1 = {},
-    beforeSend,
-    afterResponse
-  }) {
+  function _extends$1() {
+    _extends$1 = Object.assign || function (target) {
+      for (var i = 1; i < arguments.length; i++) {
+        var source = arguments[i];
+
+        for (var key in source) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            target[key] = source[key];
+          }
+        }
+      }
+
+      return target;
+    };
+
+    return _extends$1.apply(this, arguments);
+  }
+
+  const retryMap = {};
+  let reqId = Date.now();
+
+  function request(opts) {
+    let {
+      url,
+      method,
+      type,
+      data,
+      beforeSend,
+      afterResponse,
+      retry = 0,
+      options: options$$1 = {},
+      id = ++reqId
+    } = opts;
+    retryMap[id] = -~retryMap[id];
+    opts.id = id;
+
     if (data) {
       options$$1.data = data;
       options$$1.contentType = type;
@@ -396,10 +405,12 @@
     options$$1.url = url;
     options$$1.method = method;
     return new Promise((rs, rj) => {
-      ajax(_extends({
+      ajax(_extends$1({
         beforeSend,
 
         success(data, xhr) {
+          delete retryMap[id];
+
           try {
             typeof afterResponse === 'function' && afterResponse(data, xhr);
           } catch (e) {
@@ -410,27 +421,47 @@
           rs(data);
         },
 
-        error: rj
+        error(err) {
+          if (retryMap[id] < retry + 1) {
+            rs(request(opts));
+          } else {
+            delete retryMap[id];
+            rj(err);
+          }
+        }
+
       }, options$$1));
     });
   }
   /**
-   * { beforeSend, afterResponse }
+   * { beforeSend, afterResponse, retry }
    */
 
 
   function index (opts = {}) {
-    return _extends({}, ['get', 'head'].reduce((prev, cur) => (prev[cur] = (url, options$$1) => request(_extends({
+    return _extends$1({}, ['get', 'head'].reduce((prev, cur) => (prev[cur] = ({
+      name,
+      meta,
+      url,
+      options: options$$1
+    }) => request(_extends$1({}, opts, {
       url,
       method: cur.toUpperCase(),
       options: options$$1
-    }, opts)), prev), {}), ['post', 'put', 'patch', 'delete', 'options'].reduce((prev, cur) => (prev[cur] = (url, bodyOrOptions, type, isOptions) => request(_extends({
+    })), prev), {}), ['post', 'put', 'patch', 'delete', 'options'].reduce((prev, cur) => (prev[cur] = ({
+      name,
+      meta,
+      url,
+      body,
+      options: options$$1,
+      type
+    }) => request(_extends$1({}, opts, {
       url,
       type,
+      options: options$$1,
       method: cur.toUpperCase(),
-      data: isOptions ? undefined : bodyOrOptions,
-      options: isOptions ? bodyOrOptions : undefined
-    }, opts)), prev), {}));
+      data: body
+    })), prev), {}));
   }
 
   var meta = {

@@ -3,8 +3,8 @@
 <!-- [START badges] -->
 ![Travis (.com) branch](https://img.shields.io/travis/com/ta7sudan/apiz-ng/master.svg) [![codecov](https://codecov.io/gh/ta7sudan/apiz-ng/branch/master/graph/badge.svg)](https://codecov.io/gh/ta7sudan/apiz-ng) ![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg) ![npm (tag)](https://img.shields.io/npm/v/apiz-ng/latest.svg)
 
-
 <!-- [END badges] -->
+
 
 这是一个实验性的项目, 旨在提供浏览器和 Node 环境统一的 API 管理方案. 因为用到了一些无法被 Babel 编译的特性, 比如 Proxy 和正则表达式的零宽先行断言, 所以浏览器的支持度并不高, 不过考虑之后用类似思路实现一个支持较低版本浏览器的版本.
 
@@ -186,7 +186,15 @@ apis.getBook({
 
 每个 `APIzBodyRequest` 和 `APIzNoBodyRequest` 都继承自 `APIzRawOptionsRequest`, 所以你不需要额外的配置, 只需要传入第二个参数为 `true`, 作为标记提示 APIz 将第一个参数解释成完整配置, 而不是 `body`, `params` 或 `query`.
 
-`options` 支持的字段取决于底层 `APIzClient` 的实现.
+`options` 支持的字段取决于底层 `APIzClient` 的实现. 
+
+`APIzRawOptionsRequest` 还带有以下只读属性, 同 `APIInfo`.
+
+* `url`
+* `method`
+* `type`
+* `pathParams`
+* `meta`
 
 
 
@@ -210,6 +218,7 @@ apis.getBook({
 * `method`, string, 指定该 API 的 HTTP method, 默认 `GET`, 忽略大小写, APIz 只支持 `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD` 七种方法, 和浏览器一样, 对于 `CONNECT`, `TRACE` 之类的不作支持
 * `type`, string, 指定该 API 的 body 的默认 `type`, 可以是任意字符串, APIz 本身不设置任何 `type`, 支持的 `type` 由 `APIzClient` 决定, 仅对 `APIzBodyRequest` 有意义, 在调用 `APIzBodyRequest` 的时候可以省略 `type` 默认使用这里指定的 `type`
 * `pathParams`, boolean, 指示是否使用路径参数, 一旦指定则 `APIzBodyRequest` 和 `APIzNoBodyRequest` 调用时必须指定 `params`
+* `meta`, 任意类型, 用来自定义一些配置, 会被传递给 `APIzClient`
 
 
 
@@ -243,13 +252,23 @@ apis.getBook({
 
 实现一个 `APIzClient` 也很简单, 就是一个普通的对象带有以下方法, 以下方法都是可选的
 
-* `get(url: string, options?: object)`, 返回一个 `Promise`, APIz 会处理好路径参数和查询字符串, 最终的 URL 会被作为 `url` 参数传入, 如果以 `APIzRawOptionsRequest` 的形式调用, 则会传入 `options` 参数
-* `head(url: string, options?: object)`, 同 `get()`
-* `delete(url: string, options?: object)`, 同 `get()`
-* `options(url: string, options?: object)`, 同 `get()`
-* `post(url: string, bodyOrOptions: any, type: string, isOptions: boolean)`, 返回一个 `Promise`, 如果 `isOptions` 为 `true`, 则 `bodyOrOptions` 是被作为底层请求库的原始 options 传入的, 否则是作为 body 传入, `type` 用来提示 `bodyOrOptions` 作为 body 时的类型, 实现者可以根据 `type` 决定如何序列化 body 以及如何设置 `Content-Type`
-* `put(url: string, bodyOrOptions: any, type: string, isOptions: boolean)`, 同 `post()`
-* `patch(url: string, bodyOrOptions: any, type: string, isOptions: boolean)`, 同 `post()`
+* `get(opts)`, 返回一个 `Promise`, `opts` 有以下字段:
+  * `url` APIz 会处理好路径参数和查询字符串, 最终的 URL 会被作为 `url` 参数传入
+  * `name` `APIzMeta` 中配置的 key 的值
+  * `meta` `APIInfo` 中的 `meta` 会在这里被传入
+  * `options` 如果以 `APIzRawOptionsRequest` 的形式调用, 则会传入 `options` 参数
+* `head(opts)`, 同 `get()`
+* `delete(opts)`, 同 `get()`
+* `options(opts)`, 同 `get()`
+* `post(opts)`, 返回一个 `Promise`, `opts` 有以下字段:
+  * `url` APIz 会处理好路径参数和查询字符串, 最终的 URL 会被作为 `url` 参数传入
+  * `type` body 指定的 `type`, 用来提示 body 的类型, 实现者可以根据 `type` 决定如何序列化 body 以及如何设置 `Content-Type`, 由实现者自己决定支持 `type` 的值
+  * `name` `APIzMeta` 中配置的 key 的值
+  * `meta` `APIInfo` 中的 `meta` 会在这里被传入
+  * `body` 当以 `APIzBodyRequest` 形式调用时, body 被作为该字段传入, 此时 `options` 为 `undefined`
+  * `options` 当以 `APIzRawOptionsRequest` 形式调用时, 底层请求库的原始 options 被作为 `options` 传入, 此时 `body` 为 `undefined`
+* `put(opts)`, 同 `post()`
+* `patch(opts)`, 同 `post()`
 
 以下是 Node 环境基于 [got](https://github.com/sindresorhus/got) 实现的 `APIzClient` 的例子.
 
@@ -262,7 +281,7 @@ const MIME = {
 	form: 'application/x-www-form-urlencoded'
 };
 
-function request({ url, method, type, data, options = {}, beforeRequest, afterResponse }) {
+function request({ url, method, type, data, retry = 0, options = {}, beforeRequest, afterResponse }) {
 	let hooks = {};
 	if (data instanceof Buffer || data instanceof Readable) {
 		options.body = data;
@@ -288,33 +307,33 @@ function request({ url, method, type, data, options = {}, beforeRequest, afterRe
 	}
 	options.hooks = hooks;
 	options.method = method;
+	options.retry = retry;
 	return got(url, options);
 }
 
 /**
- * { beforeRequest, afterResponse }
+ * { beforeRequest, afterResponse, retry }
  */
 module.exports = function (opts = {}) {
 	return {
 		...['get', 'head'].reduce((prev, cur) =>
-			(prev[cur] = (url, options) => request({
+			(prev[cur] = ({ name, meta, url, options }) => request({
+				...opts,
 				url,
 				method: cur.toUpperCase(),
-				options,
-				...opts
+				options
 			}), prev), {}),
 		...['post', 'put', 'patch', 'delete', 'options'].reduce((prev, cur) =>
-			(prev[cur] = (url, bodyOrOptions, type, isOptions) => request({
+			(prev[cur] = ({ name, meta, url, body, options, type }) => request({
+				...opts,
 				url,
 				type,
+				options,
 				method: cur.toUpperCase(),
-				data: isOptions ? undefined : bodyOrOptions,
-				options: isOptions ? bodyOrOptions : undefined,
-				...opts
+				data: body
 			}), prev), {})
 	};
 };
-
 ```
 
 这样可以方便地实现一些自己想要的 hook, 使用时只需要

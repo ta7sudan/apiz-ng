@@ -45,6 +45,7 @@
 	    url,
 	    baseURL,
 	    path,
+	    meta,
 	    method = 'GET',
 	    type = defaultType,
 	    pathParams = false
@@ -79,6 +80,8 @@
 	    throw new Error(`client must implement a ${methodLowerCase} function.`);
 	  }
 
+	  info.name = name;
+	  info.meta = meta;
 	  info.method = method;
 	  info.methodLowerCase = methodLowerCase;
 	  info[methodLowerCase] = client[methodLowerCase];
@@ -120,7 +123,12 @@
 
 	  if (args[1] === true) {
 	    // 接口处记得检测对象是否为空
-	    return this[methodLowerCase](url, args[0]);
+	    return this[methodLowerCase]({
+	      url,
+	      name: this.name,
+	      meta: this.meta,
+	      options: args[0]
+	    });
 	  } else if (pathParams) {
 	    params = args[0];
 	    query = args[1];
@@ -139,7 +147,11 @@
 	    url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
 	  }
 
-	  return this[methodLowerCase](url);
+	  return this[methodLowerCase]({
+	    url,
+	    name: this.name,
+	    meta: this.meta
+	  });
 	}
 
 	function bodyRequest(...args) {
@@ -158,7 +170,13 @@
 	      url = this.url;
 
 	  if (args[1] === true) {
-	    return this[methodLowerCase](url, args[0], type, true);
+	    return this[methodLowerCase]({
+	      url,
+	      type,
+	      name: this.name,
+	      meta: this.meta,
+	      options: args[0]
+	    });
 	  } else if (pathParams) {
 	    params = args[1];
 	    query = args[2];
@@ -185,12 +203,18 @@
 	    url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
 	  }
 
-	  return this[methodLowerCase](url, body, type, false);
+	  return this[methodLowerCase]({
+	    url,
+	    type,
+	    body,
+	    name: this.name,
+	    meta: this.meta
+	  });
 	}
 
 	function createAPI(info) {
 	  const fn = methodMap[info.method].bind(info);
-	  ['url', 'method', 'type', 'pathParams'].forEach(k => {
+	  ['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
 	    Object.defineProperty(fn, k, {
 	      value: info[k],
 	      enumerable: true,

@@ -32,7 +32,7 @@ function parseApiInfo(
 	rawInfo,
 	{ baseURL: gBaseURL, paramRegex, querystring, client }
 ) {
-	let { url, baseURL, path, method = 'GET', type = defaultType, pathParams = false } = rawInfo;
+	let { url, baseURL, path, meta, method = 'GET', type = defaultType, pathParams = false } = rawInfo;
 	const info = {},
 		bURL = baseURL || gBaseURL;
 
@@ -57,6 +57,8 @@ function parseApiInfo(
 	if (!isFn(client[methodLowerCase])) {
 		throw new Error(`client must implement a ${methodLowerCase} function.`);
 	}
+	info.name = name;
+	info.meta = meta;
 	info.method = method;
 	info.methodLowerCase = methodLowerCase;
 	info[methodLowerCase] = client[methodLowerCase];
@@ -88,7 +90,12 @@ function noBodyRequest(...args) {
 	let params, query, qs, url = this.url;
 	if (args[1] === true) {
 		// 接口处记得检测对象是否为空
-		return this[methodLowerCase](url, args[0]);
+		return this[methodLowerCase]({
+			url,
+			name: this.name,
+			meta: this.meta,
+			options: args[0]
+		});
 	} else if (pathParams) {
 		params = args[0];
 		query = args[1];
@@ -106,14 +113,24 @@ function noBodyRequest(...args) {
 		qs = querystring(query);
 		url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
 	}
-	return this[methodLowerCase](url);
+	return this[methodLowerCase]({
+		url,
+		name: this.name,
+		meta: this.meta
+	});
 }
 
 function bodyRequest(...args) {
 	const { methodLowerCase, type: defaultType, pathParams, regex, querystring } = this;
 	let params, query, body, type, qs, url = this.url;
 	if (args[1] === true) {
-		return this[methodLowerCase](url, args[0], type, true);
+		return this[methodLowerCase]({
+			url,
+			type,
+			name: this.name,
+			meta: this.meta,
+			options: args[0]
+		});
 	} else if (pathParams) {
 		params = args[1];
 		query = args[2];
@@ -138,12 +155,18 @@ function bodyRequest(...args) {
 		qs = querystring(query);
 		url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
 	}
-	return this[methodLowerCase](url, body, type, false);
+	return this[methodLowerCase]({
+		url,
+		type,
+		body,
+		name: this.name,
+		meta: this.meta
+	});
 }
 
 function createAPI(info) {
 	const fn = methodMap[info.method].bind(info);
-	['url', 'method', 'type', 'pathParams'].forEach(k => {
+	['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
 		Object.defineProperty(fn, k, {
 			value: info[k],
 			enumerable: true,

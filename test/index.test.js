@@ -4,6 +4,7 @@ import { querystring } from '../src/querystring';
 
 /* global todo */
 
+
 /**
  * AVA 默认不处理src下面的文件, 所以需要@babel/register
  * 对于async, 还需要@babel/polyfill, 这些都在package.json中配置
@@ -123,7 +124,7 @@ test.serial('global config', t => {
 		paramRegex,
 		defaultType,
 		client: {
-			post(url, body) {
+			post({ url, body }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/test?querystring');
 				t.deepEqual(body, {
 					body: 'test'
@@ -181,7 +182,7 @@ test.serial('group config', t => {
 		paramRegex,
 		defaultType,
 		client: {
-			post(url, body) {
+			post({ url, body }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/test?querystring');
 				t.is(body, 'test');
 				t.fail();
@@ -193,7 +194,7 @@ test.serial('group config', t => {
 		querystring: o => 'gquerystring',
 		paramRegex: /:(book)/g,
 		client: {
-			post(url, body) {
+			post({ url, body }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/test?gquerystring');
 				t.deepEqual(body, {
 					body: 'test'
@@ -220,7 +221,7 @@ test.serial('use meta baseURL', t => {
 	config({
 		querystring,
 		client: {
-			get(url) {
+			get({ url }) {
 				count++
 					? t.is(url, 'http://www.a.com/test/Tom/bbb')
 					: t.is(url, 'http://www.b.com/test/SICP/aaa');
@@ -256,7 +257,7 @@ test.serial('use group baseURL', t => {
 	config({
 		querystring,
 		client: {
-			get(url) {
+			get({ url }) {
 				count++
 					? t.is(url, 'http://www.c.com/test/Tom/bbb')
 					: t.is(url, 'http://www.b.com/test/SICP/aaa');
@@ -387,7 +388,7 @@ test.serial('add new API', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
 			}
 		}
@@ -421,7 +422,7 @@ test.serial('add an API already exists', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
 			}
 		}
@@ -454,7 +455,7 @@ test.serial('remove an API already exists', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
 			}
 		}
@@ -486,7 +487,7 @@ test.serial('remove an API with delete', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
 			}
 		}
@@ -525,7 +526,7 @@ test.serial('invalid querystring', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?555');
 			}
 		}
@@ -556,7 +557,7 @@ test.serial('querystring type is string', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key0=000&key1=111');
 			}
 		}
@@ -586,7 +587,7 @@ test.serial('querystring has array', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=1&key2=2&key2=3');
 			}
 		}
@@ -621,7 +622,7 @@ test.serial('invalid params', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url) {
+			get() {
 				t.fail();
 			}
 		}
@@ -655,13 +656,13 @@ test.serial('body with type', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			post(url, options, type, isOptions) {
+			post({ url, body, options, type }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa');
-				t.deepEqual(options, {
+				t.deepEqual(body, {
 					body: 'post'
 				});
 				t.is(type, 'form');
-				t.false(isOptions);
+				t.is(options, undefined);
 			}
 		}
 	});
@@ -755,7 +756,7 @@ test.serial('all options', t => {
 		querystring,
 		immutableMeta: true,
 		client: {
-			get(url, options) {
+			get({ url, options }) {
 				switch (count++) {
 					case 0:
 						t.is(url, 'http://www.b.com/data0/000/test/111?test=1&key0=aaa&key1=bbb');
@@ -790,36 +791,37 @@ test.serial('all options', t => {
 						break;
 				}
 			},
-			post(url, bodyOrOptions, type) {
+			post({ url, body, options, type }) {
 				switch (count++) {
 					case 7:
 						t.is(url, 'http://www.a.com/test/000/aaa/111?key0=000&key1=111');
-						t.true(isObj(bodyOrOptions));
+						t.true(isObj(body));
 						t.is(type, 'json');
 						break;
 					case 8:
 						t.is(url, 'http://www.a.com/test/000/aaa/111');
-						t.true(isObj(bodyOrOptions));
+						t.true(isObj(body));
 						t.is(type, 'json');
 						break;
 					case 9:
 						t.is(url, 'http://www.a.com/test/000/aaa/111');
-						t.is(bodyOrOptions, null);
+						t.is(body, null);
 						t.is(type, 'json');
 						break;
 					case 10:
 						t.is(url, 'http://www.a.com/test');
-						t.true(isObj(bodyOrOptions));
+						t.true(isObj(body));
 						t.is(type, undefined);
 						break;
 					case 11:
 						t.is(url, 'http://www.a.com/test');
-						t.true(isObj(bodyOrOptions));
+						t.true(isObj(options));
 						t.is(type, undefined);
+						t.is(body, undefined);
 						break;
 					case 12:
 						t.is(url, 'http://www.a.com/test?key0=000&key1=111');
-						t.true(isObj(bodyOrOptions));
+						t.true(isObj(body));
 						t.is(type, undefined);
 						break;
 
