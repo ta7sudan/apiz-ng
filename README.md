@@ -368,4 +368,4 @@ const apis = new APIz(meta);
 
 如果不在意初始化开销, 也可以使用 `add()` 方法一个个添加, 这样的话 APIz 可以检测到已存在的同名 API 方法.
 
-对于前端项目, 建议使用 [babel-plugin-static-fs](https://www.npmjs.com/package/babel-plugin-static-fs) 在编译时扫描目录合并对象, 也可以考虑编写 Webpack 插件实现. 不过这个 Babel 插件可能会因为 Babel 缓存导致开发时新添加的文件没有被扫描到, 后续考虑自己撸个配套插件.
+对于前端项目, 建议使用 Webpack 的 `require.context()` 或 [babel-plugin-static-fs](https://www.npmjs.com/package/babel-plugin-static-fs) 在编译时扫描目录合并对象, 也可以考虑编写 Webpack 插件实现. 不过这个 Babel 插件可能会因为 Babel 缓存导致开发时新添加的文件没有被扫描到, 后续考虑自己撸个配套插件.

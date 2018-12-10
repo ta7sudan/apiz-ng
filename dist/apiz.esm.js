@@ -15,7 +15,8 @@ let defaultType,
     globalImmutableMeta = false; // ES2018+, 是讲这个特性没法被babel转译,
 // 那既然都用ES2018了, 不如把能用的特性都用上好了...
 
-const defaultParamRegex = /(?<=\/):((\w|-)+)/g,
+const defaultParamRegex = /:((\w|-)+)/g,
+      slashRegex = /\/\//g,
       methodMap = {
   GET: noBodyRequest,
   HEAD: noBodyRequest,
@@ -27,7 +28,8 @@ const defaultParamRegex = /(?<=\/):((\w|-)+)/g,
   // 有空改成可配置吧
   OPTIONS: noBodyRequest,
   DELETE: noBodyRequest
-};
+},
+      replaceSlash = (m, o) => o <= 6 ? m : '/';
 
 function parseApiInfo(name, rawInfo, {
   baseURL: gBaseURL,
@@ -58,7 +60,7 @@ function parseApiInfo(name, rawInfo, {
   if (isStr(url)) {
     info.url = url;
   } else if (isStr(bURL)) {
-    info.url = (bURL + (path || '')).replace(/(?<!:)(\/\/)/g, '/');
+    info.url = (bURL + (path || '')).replace(slashRegex, replaceSlash);
   } else {
     throw new Error(`API "${name}" must set url or baseURL correctly.`);
   }
@@ -66,7 +68,7 @@ function parseApiInfo(name, rawInfo, {
   method = method.toUpperCase();
   let methodLowerCase = method.toLowerCase();
 
-  if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].includes(method)) {
+  if (!(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].indexOf(method) !== -1)) {
     throw new Error(`Unsupported HTTP method: ${method}.`);
   }
 
@@ -74,6 +76,10 @@ function parseApiInfo(name, rawInfo, {
     throw new Error(`client must implement a ${methodLowerCase} function.`);
   }
 
+  const parts = info.url.split(/\/(?=\w|:)/g),
+        offset = /^(https?:|\/)/.test(parts[0]) ? 2 : 1;
+  info.baseURL = parts.slice(0, offset).join('/');
+  info.path = `/${parts.slice(offset).join('/')}`;
   info.name = name;
   info.meta = meta;
   info.method = method;
@@ -108,7 +114,9 @@ function noBodyRequest(...args) {
     methodLowerCase,
     pathParams,
     regex,
-    querystring
+    querystring,
+    baseURL,
+    path
   } = this;
   let params,
       query,
@@ -131,14 +139,14 @@ function noBodyRequest(...args) {
   }
 
   if (params) {
-    url = url.replace(regex, replaceParams(params));
+    url = baseURL + path.replace(regex, replaceParams(params));
   } else if (pathParams) {
     throw new Error('Path params is required.');
   }
 
   if (query) {
     qs = querystring(query);
-    url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
+    url = url.indexOf('?') !== -1 ? `${url}&${qs}` : `${url}?${qs}`;
   }
 
   return this[methodLowerCase]({
@@ -154,7 +162,9 @@ function bodyRequest(...args) {
     type: defaultType,
     pathParams,
     regex,
-    querystring
+    querystring,
+    baseURL,
+    path
   } = this;
   let params,
       query,
@@ -183,18 +193,18 @@ function bodyRequest(...args) {
   body = args[0];
 
   if (params) {
-    url = url.replace(regex, replaceParams(params));
+    url = baseURL + path.replace(regex, replaceParams(params));
   } else if (pathParams) {
     throw new Error('Path params is required.');
   } // 这里实际上会造成带body的query的集合和不带body的query的集合不一致,
   // 不过考虑实际情况这样的不一致也是可以接受
 
 
-  if (isStr(query) && !query.includes('=')) {
+  if (isStr(query) && !(query.indexOf('=') !== -1)) {
     type = query;
   } else if (query) {
     qs = querystring(query);
-    url = url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
+    url = url.indexOf('?') !== -1 ? `${url}&${qs}` : `${url}?${qs}`;
   }
 
   return this[methodLowerCase]({

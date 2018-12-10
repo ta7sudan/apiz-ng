@@ -13,7 +13,8 @@ let defaultType,
 
 // ES2018+, 是讲这个特性没法被babel转译,
 // 那既然都用ES2018了, 不如把能用的特性都用上好了...
-const defaultParamRegex = /(?<=\/):((\w|-)+)/g,
+const defaultParamRegex = /:((\w|-)+)/g,
+	slashRegex = /\/\//g,
 	methodMap = {
 		GET: noBodyRequest,
 		HEAD: noBodyRequest,
@@ -25,7 +26,8 @@ const defaultParamRegex = /(?<=\/):((\w|-)+)/g,
 		// 有空改成可配置吧
 		OPTIONS: noBodyRequest,
 		DELETE: noBodyRequest
-	};
+	},
+	replaceSlash = (m, o) => o <= 6 ? m : '/';
 
 function parseApiInfo(
 	name,
@@ -45,7 +47,7 @@ function parseApiInfo(
 	if (isStr(url)) {
 		info.url = url;
 	} else if (isStr(bURL)) {
-		info.url = (bURL + (path || '')).replace(/(?<!:)(\/\/)/g, '/');
+		info.url = (bURL + (path || '')).replace(slashRegex, replaceSlash);
 	} else {
 		throw new Error(`API "${name}" must set url or baseURL correctly.`);
 	}
@@ -57,6 +59,9 @@ function parseApiInfo(
 	if (!isFn(client[methodLowerCase])) {
 		throw new Error(`client must implement a ${methodLowerCase} function.`);
 	}
+	const parts = info.url.split(/\/(?=\w|:)/g), offset = /^(https?:|\/)/.test(parts[0]) ? 2 : 1;
+	info.baseURL = parts.slice(0, offset).join('/');
+	info.path = `/${parts.slice(offset).join('/')}`;
 	info.name = name;
 	info.meta = meta;
 	info.method = method;
@@ -86,7 +91,7 @@ function replaceParams(params) {
 // 实现一个request方法就好, 而不用对每个HTTP方法都实现一个
 // 对应的方法, 因为我们也可以把method传过去
 function noBodyRequest(...args) {
-	const { methodLowerCase, pathParams, regex, querystring } = this;
+	const { methodLowerCase, pathParams, regex, querystring, baseURL, path } = this;
 	let params, query, qs, url = this.url;
 	if (args[1] === true) {
 		// 接口处记得检测对象是否为空
@@ -104,7 +109,7 @@ function noBodyRequest(...args) {
 	}
 
 	if (params) {
-		url = url.replace(regex, replaceParams(params));
+		url = baseURL + path.replace(regex, replaceParams(params));
 	} else if (pathParams) {
 		throw new Error('Path params is required.');
 	}
@@ -121,7 +126,7 @@ function noBodyRequest(...args) {
 }
 
 function bodyRequest(...args) {
-	const { methodLowerCase, type: defaultType, pathParams, regex, querystring } = this;
+	const { methodLowerCase, type: defaultType, pathParams, regex, querystring, baseURL, path } = this;
 	let params, query, body, type, qs, url = this.url;
 	if (args[1] === true) {
 		return this[methodLowerCase]({
@@ -142,7 +147,7 @@ function bodyRequest(...args) {
 	body = args[0];
 
 	if (params) {
-		url = url.replace(regex, replaceParams(params));
+		url = baseURL + path.replace(regex, replaceParams(params));
 	} else if (pathParams) {
 		throw new Error('Path params is required.');
 	}
