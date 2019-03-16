@@ -1,6 +1,6 @@
 import test from 'ava';
-import { APIz, config } from '../src/core';
-import { querystring } from '../src/querystring';
+import { APIz, config } from '../test_cache/core';
+import { querystring } from '../test_cache/querystring';
 
 /* global todo */
 

@@ -1,3 +1,4 @@
+import typescript from 'rollup-plugin-typescript2';
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
 import minify from 'rollup-plugin-babel-minify';
@@ -17,13 +18,17 @@ const banner = `/**
  */`;
 
 /**
- * 为什么commonjs包要压一下? 反正要打个包, 不如压一下, 也不影响调试,
- * VSC支持sourcemap, 压完单个函数代码量少了"据说"可以有利于函数内联...
+ * 虽然讲babel其实已经没必要, 但是建议还是留个babel,
+ * 在某些时候会有些帮助...也不差这点编译时间
  */
 export default [
 	{
-		input: 'src/index.js',
+		input: 'src/index.ts',
 		plugins: [
+			typescript({
+				tsconfig: 'tsconfig.json',
+				useTsconfigDeclarationDir: true
+			}),
 			replace({
 				DEBUG: JSON.stringify(false)
 			}),
@@ -36,14 +41,12 @@ export default [
 		},
 		output: [
 			{
-				// banner,
 				file: module,
 				format: 'esm',
 				sourcemap: true
 			},
 			{
 				name: 'apizng',
-				// banner,
 				file: browser,
 				format: 'umd',
 				sourcemap: true
@@ -51,8 +54,12 @@ export default [
 		]
 	},
 	{
-		input: 'src/index.js',
+		input: 'src/index.ts',
 		plugins: [
+			typescript({
+				tsconfig: 'tsconfig.json',
+				useTsconfigDeclarationDir: true
+			}),
 			replace({
 				DEBUG: JSON.stringify(false)
 			}),

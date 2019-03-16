@@ -1,8 +1,8 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
-  (global.apizclient = factory());
-}(this, (function () { 'use strict';
+  (global = global || self, global.apizclient = factory());
+}(this, function () { 'use strict';
 
   /* global false */
   const isFn = fn => typeof fn === 'function';
@@ -15,6 +15,7 @@
 
   const isObj = o => Object.prototype.toString.call(o) === '[object Object]';
 
+  const lc = window.location;
   const xhrPool = [],
         ArrayBufferView = Object.getPrototypeOf(Object.getPrototypeOf(new Uint8Array())).constructor,
         MIME = {
@@ -159,7 +160,7 @@
 
   function ajax(options) {
     let {
-      url = location.href,
+      url = lc.href,
       method = 'GET',
       contentType: reqCtype,
       beforeSend,
@@ -199,7 +200,8 @@
 
     const slz = isFn(serialize) ? serialize : isFn(globalSerialize) ? globalSerialize : defaultSerialize,
           dslz = isFn(deserialize) ? deserialize : isFn(globalDeserialize) ? globalDeserialize : defaultDeserialize,
-          protocol = /^([\w-]+:)\/\//.exec(url)[1],
+          maybeProtocol = /^([\w-]+:)\/\//.exec(url),
+          protocol = maybeProtocol ? maybeProtocol[1] : /^(https?):\/\//.exec(lc.href)[1],
           xhr = xhrFactory(),
           hasCompleteCb = isFn(complete),
           hasErrorCb = isFn(error),
@@ -361,8 +363,8 @@
     };
   }
 
-  function _extends$1() {
-    _extends$1 = Object.assign || function (target) {
+  function _extends() {
+    _extends = Object.assign || function (target) {
       for (var i = 1; i < arguments.length; i++) {
         var source = arguments[i];
 
@@ -376,7 +378,7 @@
       return target;
     };
 
-    return _extends$1.apply(this, arguments);
+    return _extends.apply(this, arguments);
   }
 
   const retryMap = {};
@@ -391,46 +393,41 @@
       beforeSend,
       afterResponse,
       retry = 0,
-      options: options$$1 = {},
+      options = {},
       id = ++reqId
     } = opts;
     retryMap[id] = -~retryMap[id];
     opts.id = id;
 
     if (data) {
-      options$$1.data = data;
-      options$$1.contentType = type;
+      options.data = data;
+      options.contentType = type;
     }
 
-    options$$1.url = url;
-    options$$1.method = method;
+    options.url = url;
+    options.method = method;
     return new Promise((rs, rj) => {
-      ajax(_extends$1({
+      ajax(_extends({
         beforeSend,
 
         success(data, xhr) {
-          delete retryMap[id];
+          delete retryMap[id]; // 算了, 这个异常还是让它直接crash掉吧, 和后面保持一致
 
-          try {
-            typeof afterResponse === 'function' && afterResponse(data, xhr);
-          } catch (e) {
-            rj(e);
-            return;
-          }
-
+          typeof afterResponse === 'function' && afterResponse(data, xhr, url, options.data);
           rs(data);
         },
 
-        error(err) {
+        error(err, xhr) {
           if (retryMap[id] < retry + 1) {
             rs(request(opts));
           } else {
             delete retryMap[id];
+            typeof afterResponse === 'function' && afterResponse(null, xhr, url, options.data);
             rj(err);
           }
         }
 
-      }, options$$1));
+      }, options));
     });
   }
   /**
@@ -439,26 +436,26 @@
 
 
   function index (opts = {}) {
-    return _extends$1({}, ['get', 'head'].reduce((prev, cur) => (prev[cur] = ({
+    return _extends({}, ['get', 'head'].reduce((prev, cur) => (prev[cur] = ({
       name,
       meta,
       url,
-      options: options$$1
-    }) => request(_extends$1({}, opts, {
+      options
+    }) => request(_extends({}, opts, {
       url,
       method: cur.toUpperCase(),
-      options: options$$1
+      options
     })), prev), {}), ['post', 'put', 'patch', 'delete', 'options'].reduce((prev, cur) => (prev[cur] = ({
       name,
       meta,
       url,
       body,
-      options: options$$1,
+      options,
       type
-    }) => request(_extends$1({}, opts, {
+    }) => request(_extends({}, opts, {
       url,
       type,
-      options: options$$1,
+      options,
       method: cur.toUpperCase(),
       data: body
     })), prev), {}));
@@ -511,5 +508,5 @@
 
   return index;
 
-})));
+}));
 //# sourceMappingURL=apizclient.js.map
