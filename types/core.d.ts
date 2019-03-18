@@ -37,16 +37,10 @@ export interface ClientRequestOptions<T extends string, M, O> {
     type?: T;
     body?: any;
 }
-export interface APIzClient<T extends string, M, O> {
-    get?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-    head?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-    delete?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-    options?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-    post?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-    put?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-    patch?(options: ClientRequestOptions<T, M, O>): Promise<any>;
-}
-export interface GlobalOptions<T extends string, M, O, C extends APIzClient<T, M, O>> {
+export declare type APIzClient<T extends string, M, O, H extends HTTPMethodLowerCase> = {
+    [K in H]?: (options: ClientRequestOptions<T, M, O>) => Promise<any>;
+};
+export interface GlobalOptions<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>> {
     client?: C;
     paramRegex?: RegExp;
     defaultType?: string;
@@ -70,11 +64,11 @@ export interface APIzRequest<T, M, O> {
     (params: KVObject, query?: KVObject | string): Promise<any>;
     (query: KVObject | string): Promise<any>;
     (clientOptions: O, optionsFlag: boolean): Promise<any>;
-    url: string;
-    method: HTTPMethodUpperCase;
-    meta: M;
-    type: T;
-    pathParams: boolean;
+    readonly url: string;
+    readonly method: HTTPMethodUpperCase;
+    readonly meta: M;
+    readonly type: T;
+    readonly pathParams: boolean;
 }
 declare type ProxyMeta<T extends string, M, O, N extends APIMeta<T, M>> = {
     [K in keyof N]: APIzRequest<T, M, O>;
@@ -84,7 +78,7 @@ interface APIzMethod<T extends string, M> {
     remove: (name: string) => this;
 }
 export declare type APIzInstance<T extends string, M, O, N extends APIMeta<T, M>> = APIzMethod<T, M> & Omit<ProxyMeta<T, M, O, N>, 'add' | 'remove'>;
-declare function APIz<T extends string, M, O, C extends APIzClient<T, M, O>, N extends APIMeta<T, M>>(apiMeta: N, options?: APIzOptions<C>): APIzInstance<T, M, O, N>;
+declare function APIz<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>, N extends APIMeta<T, M>>(apiMeta: N, options?: APIzOptions<C>): APIzInstance<T, M, O, N> | never;
 export { APIz };
-export declare function config<T extends string, M, O, C extends APIzClient<T, M, O>>({ querystring, paramRegex, immutableMeta, client, reset, defaultType: dt }?: GlobalOptions<T, M, O, C>): void;
+export declare function config<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>>({ querystring, paramRegex, immutableMeta, client, reset, defaultType: dt }?: GlobalOptions<T, M, O, C>): void;
 //# sourceMappingURL=core.d.ts.map

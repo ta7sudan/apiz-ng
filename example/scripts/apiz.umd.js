@@ -16,16 +16,16 @@
 	// ES2018+, 是讲这个特性没法被babel转译,
 	// 那既然都用ES2018了, 不如把能用的特性都用上好了...
 	const defaultParamRegex = /:((\w|-)+)/g, slashRegex = /\/\//g, methodMap = {
-	    GET: noBodyRequest,
-	    HEAD: noBodyRequest,
-	    POST: bodyRequest,
-	    PUT: bodyRequest,
-	    PATCH: bodyRequest,
+	    get: noBodyRequest,
+	    head: noBodyRequest,
+	    post: bodyRequest,
+	    put: bodyRequest,
+	    patch: bodyRequest,
 	    // 尽管浏览器支持OPTIONS和DELETE带body, 但是考虑到不常用,
 	    // 还是默认它们不带body, 如果需要的话, 可以直接开启完整选项加入body
 	    // 有空改成可配置吧
-	    OPTIONS: noBodyRequest,
-	    DELETE: noBodyRequest
+	    options: noBodyRequest,
+	    delete: noBodyRequest
 	}, replaceSlash = (m, o) => o <= 6 ? m : '/';
 	function parseApiInfo(name, rawInfo, { baseURL: gBaseURL, paramRegex, querystring, client }) {
 	    // tslint:disable-next-line
@@ -166,7 +166,11 @@
 	}
 	function createAPI(info) {
 	    // const fn = methodMap[info.method]
-	    const fn = methodMap[info.method].bind(info);
+	    const f = methodMap[info.methodLowerCase];
+	    if (!f) {
+	        throw new Error(`APIzClient must implement ${info.methodLowerCase} method.`);
+	    }
+	    const fn = f.bind(info);
 	    ['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
 	        Object.defineProperty(fn, k, {
 	            value: info[k],
