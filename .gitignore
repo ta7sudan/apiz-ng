@@ -61,3 +61,5 @@ typings/
 .next
 
 coverage.lcov
+.rpt2_cache
+test_cache

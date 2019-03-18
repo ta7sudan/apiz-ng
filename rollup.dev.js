@@ -1,3 +1,4 @@
+import typescript from 'rollup-plugin-typescript2';
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
 import resolve from 'rollup-plugin-node-resolve';
@@ -5,8 +6,12 @@ import commonjs from 'rollup-plugin-commonjs';
 import { relative } from 'path';
 
 export default [{
-	input: 'src/index.js',
+	input: 'src/index.ts',
 	plugins: [
+		typescript({
+			tsconfig: 'tsconfig.json',
+			useTsconfigDeclarationDir: true
+		}),
 		replace({
 			DEBUG: JSON.stringify(true)
 		}),

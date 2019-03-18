@@ -1,7 +1,7 @@
 import test from 'ava';
 import meta from './_meta';
 import apizclient from 'apiz-node-client';
-import { APIz, config } from '../src';
+import { APIz, config } from '../test_cache';
 import './_pock';
 
 const isObj = o => Object.prototype.toString.call(o) === '[object Object]';
