@@ -1,6 +1,6 @@
 import { Omit } from 'type-fest';
 declare type HTTPMethodUpperCase = 'GET' | 'POST' | 'HEAD' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS';
-declare type HTTPMethodLowerCase = 'get' | 'post' | 'head' | 'put' | 'patch' | 'delete' | 'options';
+export declare type HTTPMethodLowerCase = 'get' | 'post' | 'head' | 'put' | 'patch' | 'delete' | 'options';
 declare type HTTPMethod = HTTPMethodUpperCase | HTTPMethodLowerCase;
 interface KVObject {
     [k: string]: any;

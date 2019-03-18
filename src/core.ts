@@ -3,7 +3,7 @@ import { Omit } from 'type-fest';
 
 type HTTPMethodUpperCase = 'GET' | 'POST' | 'HEAD' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS';
 
-type HTTPMethodLowerCase = 'get' | 'post' | 'head' | 'put' | 'patch' | 'delete' | 'options';
+export type HTTPMethodLowerCase = 'get' | 'post' | 'head' | 'put' | 'patch' | 'delete' | 'options';
 
 type HTTPMethod = HTTPMethodUpperCase | HTTPMethodLowerCase;
 
