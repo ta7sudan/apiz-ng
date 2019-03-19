@@ -107,10 +107,10 @@
     "rollup-plugin-typescript2": "^0.19.2",
     "tslint": "^5.12.1",
     "tslint-config-prettier": "^1.18.0",
-    "type-fest": "^0.2.0",
     "typescript": "^3.3.3"
   },
   "dependencies": {
-    "tslib": "^1.9.3"
+    "tslib": "^1.9.3",
+    "type-fest": "^0.3.0"
   }
 }
