@@ -420,7 +420,7 @@
 
           isFn$1(afterResponse) && afterResponse($data, 'success', xhr, url, reqData);
           rs({
-            $data,
+            data: $data,
 
             next() {
               isFn$1(complete) && complete($data, xhr, url, reqData);
