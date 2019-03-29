@@ -168,7 +168,7 @@
 	        throw new Error(`APIzClient must implement ${info.methodLowerCase} method.`);
 	    }
 	    const fn = f.bind(info);
-	    ['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
+	    ['url', 'method', 'meta', 'type', 'pathParams'].forEach((k) => {
 	        Object.defineProperty(fn, k, {
 	            value: info[k],
 	            enumerable: true,
@@ -292,7 +292,7 @@
 	const querystring = function (obj) {
 	    if (Object.prototype.toString.call(obj) === '[object Object]') {
 	        return Object.keys(obj)
-	            .map(k => Array.isArray(obj[k])
+	            .map((k) => Array.isArray(obj[k])
 	            ? obj[k]
 	                .map((v) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
 	                .join('&')
