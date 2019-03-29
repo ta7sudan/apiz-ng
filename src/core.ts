@@ -135,7 +135,7 @@ export type APIzInstance<T extends string, M, O, N extends APIMeta<T, M>> =  API
 
 
 const toString = (Map as unknown as () => any).call.bind(Object.prototype.toString);
-const isObj = (o: any) => toString(o) === '[object Object]';
+const isObj = (o: any): boolean => toString(o) === '[object Object]';
 const isFn = (f: any): f is Callable => typeof f === 'function';
 const isStr = (s: any): s is string => s && typeof s === 'string';
 const isEnumerable = (Map as unknown as () => any).call.bind(Object.prototype.propertyIsEnumerable);
@@ -164,7 +164,7 @@ const defaultParamRegex = /:((\w|-)+)/g,
 		options: noBodyRequest,
 		delete: noBodyRequest
 	},
-	replaceSlash = (m: string, o: number) => o <= 6 ? m : '/';
+	replaceSlash = (m: string, o: number): string => o <= 6 ? m : '/';
 
 
 function parseApiInfo<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>>(
@@ -174,7 +174,7 @@ function parseApiInfo<T extends string, M, O, C extends APIzClient<T, M, O, HTTP
 		baseURL?: string;
 		paramRegex: RegExp;
 		querystring: Serialize2QueryString;
-		client: C
+		client: C;
 	}
 ): ParsedAPIMetaInfo<T, M, O> | never {
 	// tslint:disable-next-line
@@ -220,7 +220,7 @@ function parseApiInfo<T extends string, M, O, C extends APIzClient<T, M, O, HTTP
 }
 
 function replaceParams(params: KVObject): (m: string, v: string) => string | never {
-	return (m: string, v: string) => {
+	return (m: string, v: string): string | never => {
 		if (params[v] == null) {
 			throw new Error(`Can't find a property "${v}" in params.`);
 		}
@@ -323,7 +323,7 @@ function createAPI<T extends string, M, O>(info: ParsedAPIMetaInfo<T, M, O>): AP
 	}
 	const fn = f.bind(info);
 
-	['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
+	['url', 'method', 'meta', 'type', 'pathParams'].forEach((k: string) => {
 		Object.defineProperty(fn, k, {
 			value: (info as any)[k],
 			enumerable: true,
@@ -425,7 +425,7 @@ function APIz<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLo
 	}
 
 	const pxy = new Proxy({}, {
-		get(target, key, receiver) {
+		get(target: object, key: string | symbol, receiver: APIzInstance<T, M, O, N>): any {
 			if (!meta[key as string] || !isEnumerable(meta, key)) {
 				return Reflect.get(target, key);
 			} else if (!(meta[key as string] as ParsedAPIMetaInfo<T, M, O>).init) {
@@ -437,7 +437,7 @@ function APIz<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLo
 			Reflect.set(receiver, key, apiFn);
 			return apiFn;
 		},
-		getPrototypeOf() {
+		getPrototypeOf(): object {
 			return APIz.prototype;
 		}
 	});
@@ -465,7 +465,7 @@ export function config<T extends string, M, O, C extends APIzClient<T, M, O, HTT
 	{
 		querystring, paramRegex, immutableMeta, client, reset, defaultType: dt
 	}: GlobalOptions<T, M, O, C> = { reset: true }
-	) {
+): void {
 	isFn(querystring) && (globalQuerystring = querystring);
 	paramRegex instanceof RegExp && (globalParamRegex = paramRegex);
 	globalImmutableMeta = immutableMeta;

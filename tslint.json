@@ -23,6 +23,15 @@
 		"ban-comma-operator": false,
 		"arrow-return-shorthand": true,
 		"linebreak-style": [true, "LF"],
+		"typedef": [
+			true,
+			"call-signature",
+			"arrow-call-signature",
+			"parameter",
+			"arrow-parameter",
+			"property-declaration",
+			"member-variable-declaration"
+		],
 		"indent": [
 			true,
 			"tabs",
