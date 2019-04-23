@@ -91,7 +91,8 @@
 	  info.name = name;
 	  info.meta = meta;
 	  info.method = method;
-	  info.methodLowerCase = methodLowerCase;
+	  info.methodLowerCase = methodLowerCase; // 前面已经确保了client实现了该method
+
 	  info[methodLowerCase] = client[methodLowerCase];
 	  info.type = type;
 	  info.pathParams = pathParams;
@@ -227,11 +228,11 @@
 
 	function createAPI(info) {
 	  // const fn = methodMap[info.method]
-	  const f = methodMap[info.methodLowerCase];
-
-	  if (!f) {
-	    throw new Error(`APIzClient must implement ${info.methodLowerCase} method.`);
-	  }
+	  const f = methodMap[info.methodLowerCase]; // 因为在parseApiInfo的时候已经判断过了, 所以这里不需要判断了, 可以确定f不为空
+	  // 但是如果哪天重构把前面的判断去掉了, 这里记得加回来
+	  // if (!f) {
+	  // 	throw new Error(`APIzClient must implement ${info.methodLowerCase} method.`);
+	  // }
 
 	  const fn = f.bind(info);
 	  ['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
