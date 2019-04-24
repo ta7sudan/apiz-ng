@@ -6,79 +6,77 @@ interface KVObject {
     [k: string]: any;
 }
 export declare type Serialize2QueryString = (obj: any) => string;
-interface APIMetaInfoWithURL<T extends string, M> {
+interface APIMetaInfoWithURL<APIzClientType extends string = string, APIzClientMeta = any> {
     url: string;
     method?: HTTPMethod;
-    type?: T;
+    type?: APIzClientType;
     pathParams?: boolean;
-    meta?: M;
+    meta?: APIzClientMeta;
 }
-interface APIMetaInfoWithPath<T extends string, M> {
+interface APIMetaInfoWithPath<APIzClientType extends string = string, APIzClientMeta = any> {
     baseURL?: string;
     path: string;
     method?: HTTPMethod;
-    type?: T;
+    type?: APIzClientType;
     pathParams?: boolean;
-    meta?: M;
+    meta?: APIzClientMeta;
 }
-export declare type APIMetaInfo<T extends string, M> = APIMetaInfoWithURL<T, M> | APIMetaInfoWithPath<T, M>;
-interface APIMetaWithoutBaseURL<T extends string, M> {
-    [key: string]: APIMetaInfo<T, M>;
+export declare type APIMetaInfo<APIzClientType extends string = string, APIzClientMeta = any> = APIMetaInfoWithURL<APIzClientType, APIzClientMeta> | APIMetaInfoWithPath<APIzClientType, APIzClientMeta>;
+interface APIMetaWithoutBaseURL<APIzClientType extends string = string, APIzClientMeta = any> {
+    [key: string]: APIMetaInfo<APIzClientType, APIzClientMeta>;
 }
 interface APIMetaWithBaseURL {
     _baseURL?: string;
 }
-export declare type APIMeta<T extends string, M> = APIMetaWithBaseURL & Omit<APIMetaWithoutBaseURL<T, M>, '_baseURL'>;
-export interface ClientRequestOptions<T extends string, M, O> {
+export declare type APIMeta<APIzClientType extends string = string, APIzClientMeta = any> = APIMetaWithBaseURL & Omit<APIMetaWithoutBaseURL<APIzClientType, APIzClientMeta>, '_baseURL'>;
+export interface ClientRequestOptions<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any> {
     url: string;
     name: string;
-    meta?: M;
-    options?: O;
-    type?: T;
+    meta?: APIzClientMeta;
+    options?: RawRequestOptions;
+    type?: APIzClientType;
     body?: any;
 }
-export declare type APIzClient<T extends string, M, O, H extends HTTPMethodLowerCase> = {
-    [K in H]?: (options: ClientRequestOptions<T, M, O>) => Promise<any>;
+export declare type APIzClient<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = {
+    [K in Method]?: (options: ClientRequestOptions<RawRequestOptions, APIzClientType, APIzClientMeta>) => Promise<any>;
 };
-export interface GlobalOptions<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>> {
-    client?: C;
+export interface GlobalOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
+    client?: Client;
     paramRegex?: RegExp;
     defaultType?: string;
     immutableMeta?: boolean;
     reset?: boolean;
     querystring?(obj: object): string;
 }
-export interface APIzOptions<C> {
+export interface APIzOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
     baseURL?: string;
-    client?: C;
+    client?: Client;
     immutableMeta?: boolean;
     paramRegex?: RegExp;
     querystring?: Serialize2QueryString;
 }
-export interface APIzRequest<T, M, O> {
-    (body: any, params: KVObject, query: KVObject | string, type: T): Promise<any>;
-    (body?: any, params?: KVObject, query?: KVObject | string): Promise<any>;
-    (body: any, params: KVObject | string, type: T): Promise<any>;
-    (body: any, query: KVObject | string): Promise<any>;
-    (body: any, type: T): Promise<any>;
+export interface APIzRequest<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any> {
+    (body?: any, params?: KVObject, query?: KVObject | string, type?: APIzClientType): Promise<any>;
+    (body: any, params: KVObject | string, type?: APIzClientType): Promise<any>;
+    (body: any, type: APIzClientType): Promise<any>;
     (params: KVObject, query?: KVObject | string): Promise<any>;
     (query: KVObject | string): Promise<any>;
-    (clientOptions: O, optionsFlag: boolean): Promise<any>;
+    (rawRequestOptions: RawRequestOptions, optionsFlag: boolean): Promise<any>;
     readonly url: string;
     readonly method: HTTPMethodUpperCase;
-    readonly meta: M;
-    readonly type: T;
+    readonly meta: APIzClientMeta;
+    readonly type: APIzClientType;
     readonly pathParams: boolean;
 }
-declare type ProxyMeta<T extends string, M, O, N extends APIMeta<T, M>> = {
-    [K in keyof N]: APIzRequest<T, M, O>;
+declare type ProxyMeta<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any> = {
+    [K in keyof Meta]: APIzRequest<RawRequestOptions, APIzClientType, APIzClientMeta>;
 };
-interface APIzMethod<T extends string, M> {
-    add: (name: string, apiInfo: APIMetaInfo<T, M>) => this;
+interface APIzMethod<APIzClientType extends string = string, APIzClientMeta = any> {
+    add: (name: string, apiInfo: APIMetaInfo<APIzClientType, APIzClientMeta>) => this;
     remove: (name: string) => this;
 }
-export declare type APIzInstance<T extends string, M, O, N extends APIMeta<T, M>> = APIzMethod<T, M> & Omit<ProxyMeta<T, M, O, N>, 'add' | 'remove'>;
-declare function APIz<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>, N extends APIMeta<T, M>>(apiMeta: N, options?: APIzOptions<C>): APIzInstance<T, M, O, N> | never;
+export declare type APIzInstance<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any> = APIzMethod<APIzClientType, APIzClientMeta> & Omit<ProxyMeta<RawRequestOptions, Meta, APIzClientType, APIzClientMeta>, 'add' | 'remove'>;
+declare function APIz<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(apiMeta: Meta, options?: APIzOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method>): APIzInstance<RawRequestOptions, Meta, APIzClientType, APIzClientMeta> | never;
 export { APIz };
-export declare function config<T extends string, M, O, C extends APIzClient<T, M, O, HTTPMethodLowerCase>>({ querystring, paramRegex, immutableMeta, client, reset, defaultType: dt }?: GlobalOptions<T, M, O, C>): void;
+export declare function config<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>({ querystring, paramRegex, immutableMeta, client, reset, defaultType: dt }?: GlobalOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method>): void;
 //# sourceMappingURL=core.d.ts.map
