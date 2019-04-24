@@ -1,5 +1,5 @@
 /**
- * @Version 3.0.0
+ * @Version 3.0.1
  * @Author: ta7sudan
  * @Repo: https://github.com/ta7sudan/apiz-ng#readme
  * @License: MIT
