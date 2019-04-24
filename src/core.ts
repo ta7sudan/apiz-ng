@@ -18,7 +18,7 @@ interface KVObject {
 
 export type Serialize2QueryString = (obj: any) => string;
 
-interface APIMetaInfoWithURL<APIzClientType extends string = string, APIzClientMeta = any> {
+interface APIMetaInfoWithURL<APIzClientType = any, APIzClientMeta = any> {
 	url: string;
 	method?: HTTPMethod;
 	// type应当由APIzClient提供, 这里暂定string
@@ -28,7 +28,7 @@ interface APIMetaInfoWithURL<APIzClientType extends string = string, APIzClientM
 	meta?: APIzClientMeta;
 }
 
-interface APIMetaInfoWithPath<APIzClientType extends string = string, APIzClientMeta = any> {
+interface APIMetaInfoWithPath<APIzClientType = any, APIzClientMeta = any> {
 	baseURL?: string;
 	path: string;
 	method?: HTTPMethod;
@@ -39,9 +39,9 @@ interface APIMetaInfoWithPath<APIzClientType extends string = string, APIzClient
 	meta?: APIzClientMeta;
 }
 
-export type APIMetaInfo<APIzClientType extends string = string, APIzClientMeta = any> = APIMetaInfoWithURL<APIzClientType, APIzClientMeta> | APIMetaInfoWithPath<APIzClientType, APIzClientMeta>;
+export type APIMetaInfo<APIzClientType = any, APIzClientMeta = any> = APIMetaInfoWithURL<APIzClientType, APIzClientMeta> | APIMetaInfoWithPath<APIzClientType, APIzClientMeta>;
 
-interface APIMetaWithoutBaseURL<APIzClientType extends string = string, APIzClientMeta = any> {
+interface APIMetaWithoutBaseURL<APIzClientType = any, APIzClientMeta = any> {
 	[key: string]: APIMetaInfo<APIzClientType, APIzClientMeta>;
 }
 
@@ -51,9 +51,9 @@ interface APIMetaWithBaseURL {
 
 // 为什么不把这两个放一个接口, 放一个接口的话, 索引类型还需要联合undefined和string
 // 然而对于APIMetaInfo, 是不允许undefined和string, 所以拆两个接口用&
-export type APIMeta<APIzClientType extends string = string, APIzClientMeta = any> = APIMetaWithBaseURL & Omit<APIMetaWithoutBaseURL<APIzClientType, APIzClientMeta>, '_baseURL'>;
+export type APIMeta<APIzClientType = any, APIzClientMeta = any> = APIMetaWithBaseURL & Omit<APIMetaWithoutBaseURL<APIzClientType, APIzClientMeta>, '_baseURL'>;
 
-export interface ClientRequestOptions<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any> {
+export interface ClientRequestOptions<RawRequestOptions, APIzClientType = any, APIzClientMeta = any> {
 	url: string;
 	name: string;
 	meta?: APIzClientMeta;
@@ -62,20 +62,20 @@ export interface ClientRequestOptions<RawRequestOptions, APIzClientType extends 
 	body?: any;
 }
 
-export type APIzClient<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = {
+export type APIzClient<RawRequestOptions, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = {
 	[K in Method]?: (options: ClientRequestOptions<RawRequestOptions, APIzClientType, APIzClientMeta>) => Promise<any>;
 }
 
-export interface GlobalOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
+export interface GlobalOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
 	client?: Client;
 	paramRegex?: RegExp;
-	defaultType?: string;
+	defaultType?: any;
 	immutableMeta?: boolean;
 	reset?: boolean;
 	querystring?(obj: object): string;
 }
 
-export interface APIzOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
+export interface APIzOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
 	baseURL?: string;
 	client?: Client;
 	immutableMeta?: boolean;
@@ -84,8 +84,8 @@ export interface APIzOptions<RawRequestOptions, Client extends APIzClient<RawReq
 }
 
 // emmm...这里比较尴尬, 照理来说应该是下面这样, 但是这样Method不是确定的, extends需要继承一个确定的类型
-// interface ParsedAPIMetaInfo<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method> {
-interface ParsedAPIMetaInfo<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any> extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta> {
+// interface ParsedAPIMetaInfo<RawRequestOptions, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method> {
+interface ParsedAPIMetaInfo<RawRequestOptions, APIzClientType = any, APIzClientMeta = any> extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta> {
 	url: string;
 	baseURL: string;
 	path: string;
@@ -100,7 +100,7 @@ interface ParsedAPIMetaInfo<RawRequestOptions, APIzClientType extends string = s
 	init: boolean;
 };
 
-export interface APIzRequest<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any> {
+export interface APIzRequest<RawRequestOptions, APIzClientType = any, APIzClientMeta = any> {
 	// with body
 	(body?: any, params?: KVObject, query?: KVObject | string, type?: APIzClientType): Promise<any>;
 	// (body?: any, params?: KVObject, query?: KVObject | string): Promise<any>;
@@ -124,16 +124,16 @@ export interface APIzRequest<RawRequestOptions, APIzClientType extends string = 
 }
 
 
-type ProxyMeta<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any> = {
+type ProxyMeta<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType = any, APIzClientMeta = any> = {
 	[K in keyof Meta]: APIzRequest<RawRequestOptions, APIzClientType, APIzClientMeta>;
 }
 
-interface APIzMethod<APIzClientType extends string = string, APIzClientMeta = any> {
+interface APIzMethod<APIzClientType = any, APIzClientMeta = any> {
 	add: (name: string, apiInfo: APIMetaInfo<APIzClientType, APIzClientMeta>) => this;
 	remove: (name: string) => this;
 }
 
-export type APIzInstance<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any> =  APIzMethod<APIzClientType, APIzClientMeta> & Omit<ProxyMeta<RawRequestOptions, Meta, APIzClientType, APIzClientMeta>, 'add' | 'remove'>;
+export type APIzInstance<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType = any, APIzClientMeta = any> =  APIzMethod<APIzClientType, APIzClientMeta> & Omit<ProxyMeta<RawRequestOptions, Meta, APIzClientType, APIzClientMeta>, 'add' | 'remove'>;
 
 
 const toString = (Map as unknown as () => any).call.bind(Object.prototype.toString);
@@ -142,7 +142,7 @@ const isFn = (f: any): f is Callable => typeof f === 'function';
 const isStr = (s: any): s is string => s && typeof s === 'string';
 const isEnumerable = (Map as unknown as () => any).call.bind(Object.prototype.propertyIsEnumerable);
 
-let defaultType: string | undefined,
+let defaultType: any,
 	globalQuerystring: Serialize2QueryString | undefined,
 	globalParamRegex: RegExp | undefined,
 	// 这东西有没有, 是什么类型, 应该只能在运行时才能确定了, 或者分析控制流?
@@ -169,7 +169,7 @@ const defaultParamRegex = /:((\w|-)+)/g,
 	replaceSlash = (m: string, o: number): string => o <= 6 ? m : '/';
 
 
-function parseApiInfo<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(
+function parseApiInfo<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(
 	name: string,
 	rawInfo: UnionToIntersection<APIMetaInfo<APIzClientType, APIzClientMeta>>,
 	{ baseURL: gBaseURL, paramRegex, querystring, client }: {
@@ -238,7 +238,7 @@ function replaceParams(params: KVObject): (m: string, v: string) => string | nev
 // 代码重复算是可以接受. 另一方面讲, 其实也可以让接口只
 // 实现一个request方法就好, 而不用对每个HTTP方法都实现一个
 // 对应的方法, 因为我们也可以把method传过去
-function noBodyRequest<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any>(this: ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>, ...args: Array<any>): Promise<any> | never {
+function noBodyRequest<RawRequestOptions, APIzClientType = any, APIzClientMeta = any>(this: ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>, ...args: Array<any>): Promise<any> | never {
 	const { methodLowerCase, pathParams, regex, querystring, baseURL, path } = this;
 	let params, query, qs, url = this.url;
 	if (args[1] === true) {
@@ -273,7 +273,7 @@ function noBodyRequest<RawRequestOptions, APIzClientType extends string = string
 	});
 }
 
-function bodyRequest<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any>(this: ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>, ...args: Array<any>): Promise<any> | never {
+function bodyRequest<RawRequestOptions, APIzClientType = any, APIzClientMeta = any>(this: ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>, ...args: Array<any>): Promise<any> | never {
 	// $以区分全局变量
 	const { methodLowerCase, type: $defaultType, pathParams, regex, querystring, baseURL, path } = this;
 	let params, query, body, type, qs, url = this.url;
@@ -318,7 +318,7 @@ function bodyRequest<RawRequestOptions, APIzClientType extends string = string, 
 	});
 }
 
-function createAPI<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any>(info: ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>): APIzRequest<RawRequestOptions, APIzClientType, APIzClientMeta> | never {
+function createAPI<RawRequestOptions, APIzClientType = any, APIzClientMeta = any>(info: ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>): APIzRequest<RawRequestOptions, APIzClientType, APIzClientMeta> | never {
 	// const fn = methodMap[info.method]
 	const f = (methodMap as unknown as ParsedAPIMetaInfo<RawRequestOptions, APIzClientType, APIzClientMeta>)[info.methodLowerCase];
 	// 因为在parseApiInfo的时候已经判断过了, 所以这里不需要判断了, 可以确定f不为空
@@ -380,7 +380,7 @@ function createAPI<RawRequestOptions, APIzClientType extends string = string, AP
 // 实现上面的constructor接口, 只能是让ts中不允许new调用, js中运行new调用了
 // 其实也没什么影响, 除了看上去不那么面向对象少个new
 // 另外泛型参数过多有什么好的解决办法?
-function APIz<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(apiMeta: Meta, options?: APIzOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method>): APIzInstance<RawRequestOptions, Meta, APIzClientType, APIzClientMeta> | never {
+function APIz<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(apiMeta: Meta, options?: APIzOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method>): APIzInstance<RawRequestOptions, Meta, APIzClientType, APIzClientMeta> | never {
 	let baseURL: string | undefined,
 		immutableMeta: boolean,
 		paramRegex: RegExp,
@@ -466,7 +466,7 @@ function APIz<RawRequestOptions, Client extends APIzClient<RawRequestOptions, AP
 
 export { APIz };
 
-export function config<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(
+export function config<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(
 	{
 		querystring, paramRegex, immutableMeta, client, reset, defaultType: dt
 	}: GlobalOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method> = { reset: true }
