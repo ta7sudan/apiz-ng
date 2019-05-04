@@ -17,4 +17,4 @@ export const querystring: Serialize2QueryString = function (obj: any): string {
 	} else {
 		return JSON.stringify(obj);
 	}
-}
+};

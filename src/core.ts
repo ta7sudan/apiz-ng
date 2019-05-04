@@ -64,7 +64,7 @@ export interface ClientRequestOptions<RawRequestOptions, APIzClientType extends 
 
 export type APIzClient<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = {
 	[K in Method]?: (options: ClientRequestOptions<RawRequestOptions, APIzClientType, APIzClientMeta>) => Promise<any>;
-}
+};
 
 export interface GlobalOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType extends string = string, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
 	client?: Client;
@@ -96,7 +96,7 @@ interface ParsedAPIMetaInfo<RawRequestOptions, APIzClientType extends string = s
 	regex: RegExp;
 	querystring: Serialize2QueryString;
 	init: boolean;
-};
+}
 
 export interface APIzRequest<RawRequestOptions, APIzClientType extends string = string, APIzClientMeta = any> {
 	// with body
@@ -124,7 +124,7 @@ export interface APIzRequest<RawRequestOptions, APIzClientType extends string = 
 
 type ProxyMeta<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType extends string = string, APIzClientMeta = any> = {
 	[K in keyof Meta]: APIzRequest<RawRequestOptions, APIzClientType, APIzClientMeta>;
-}
+};
 
 interface APIzMethod<APIzClientType extends string = string, APIzClientMeta = any> {
 	add: (name: string, apiInfo: APIMetaInfo<APIzClientType, APIzClientMeta>) => this;
