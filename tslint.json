@@ -6,6 +6,7 @@
 	],
 	"jsRules": {},
 	"rules": {
+		"semicolon": [true, "always", "ignore-interfaces"],
 		"no-console": false,
 		"one-variable-per-declaration": false,
 		"no-unused-expression": false,
