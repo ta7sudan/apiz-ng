@@ -7,9 +7,9 @@ export const querystring: Serialize2QueryString = function (obj: any): string {
 				(k: string) =>
 					Array.isArray(obj[k])
 						? obj[k]
-							.map((v: any) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+							.map((v: any) => `${encodeURIComponent(k)}=${encodeURIComponent(v == null ? '' : v)}`)
 							.join('&')
-						: `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`
+						: `${encodeURIComponent(k)}=${encodeURIComponent(obj[k] == null ? '' : obj[k])}`
 			)
 			.join('&');
 	} else if (typeof obj === 'string') {
