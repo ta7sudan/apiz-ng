@@ -1,82 +1,81 @@
-import { Omit } from 'type-fest';
 export declare type HTTPMethodUpperCase = 'GET' | 'POST' | 'HEAD' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS';
 export declare type HTTPMethodLowerCase = 'get' | 'post' | 'head' | 'put' | 'patch' | 'delete' | 'options';
-declare type HTTPMethod = HTTPMethodUpperCase | HTTPMethodLowerCase;
-interface KVObject {
-    [k: string]: any;
-}
-export declare type Serialize2QueryString = (obj: any) => string;
-interface APIMetaInfoWithURL<APIzClientType = any, APIzClientMeta = any> {
+export declare type HTTPMethod = HTTPMethodUpperCase | HTTPMethodLowerCase;
+interface APIInfoWithURL<ContentType, Meta> {
     url: string;
     method?: HTTPMethod;
-    type?: APIzClientType;
-    pathParams?: boolean;
-    meta?: APIzClientMeta;
+    type?: ContentType;
+    meta?: Meta;
 }
-interface APIMetaInfoWithPath<APIzClientType = any, APIzClientMeta = any> {
+interface APIInfoWithPath<ContentType, Meta> {
     baseURL?: string;
     path: string;
     method?: HTTPMethod;
-    type?: APIzClientType;
-    pathParams?: boolean;
-    meta?: APIzClientMeta;
+    type?: ContentType;
+    meta?: Meta;
 }
-export declare type APIMetaInfo<APIzClientType = any, APIzClientMeta = any> = APIMetaInfoWithURL<APIzClientType, APIzClientMeta> | APIMetaInfoWithPath<APIzClientType, APIzClientMeta>;
-interface APIMetaWithoutBaseURL<APIzClientType = any, APIzClientMeta = any> {
-    [key: string]: APIMetaInfo<APIzClientType, APIzClientMeta>;
+export declare type APIInfo<ContentType = any, Meta = any> = APIInfoWithURL<ContentType, Meta> | APIInfoWithPath<ContentType, Meta>;
+export interface APIGroup<T extends Record<string, APIInfo<any, any>> = Record<string, APIInfo<any, any>>> {
+    baseURL?: string;
+    apis: T;
 }
-interface APIMetaWithBaseURL {
-    _baseURL?: string;
-}
-export declare type APIMeta<APIzClientType = any, APIzClientMeta = any> = APIMetaWithBaseURL & Omit<APIMetaWithoutBaseURL<APIzClientType, APIzClientMeta>, '_baseURL'>;
-export interface ClientRequestOptions<RawRequestOptions, APIzClientType = any, APIzClientMeta = any> {
+export interface ClientRequestOptions<RawRequestOptions, ContentType, Meta> {
     url: string;
     name: string;
-    meta?: APIzClientMeta;
+    meta?: Meta;
     options?: RawRequestOptions;
-    type?: APIzClientType;
     body?: any;
+    params?: Record<string, string>;
+    query?: string | Record<string, any>;
+    headers?: Record<string, any>;
+    type?: ContentType;
+    handleError?: boolean;
 }
-export declare type APIzClient<RawRequestOptions, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = {
-    [K in Method]?: (options: ClientRequestOptions<RawRequestOptions, APIzClientType, APIzClientMeta>) => Promise<any>;
+export declare type APIzClientRequest<RawRequestOptions, ContentType, Meta> = (options: ClientRequestOptions<RawRequestOptions, ContentType, Meta>) => Promise<any>;
+export declare type APIzClient<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = {
+    [k in Method]: APIzClientRequest<RawRequestOptions, ContentType, Meta>;
 };
-export interface GlobalOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
-    client?: Client;
-    paramRegex?: RegExp;
-    defaultType?: any;
-    immutableMeta?: boolean;
-    reset?: boolean;
-    querystring?(obj: object): string;
-}
-export interface APIzOptions<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
+export declare type Serialize2QueryString = (obj: any) => string;
+export interface APIzOptions<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
     baseURL?: string;
-    client?: Client;
-    immutableMeta?: boolean;
+    client?: APIzClient<RawRequestOptions, ContentType, Meta, Method>;
+    immutable?: boolean;
     paramRegex?: RegExp;
     querystring?: Serialize2QueryString;
 }
-export interface APIzRequest<RawRequestOptions, APIzClientType = any, APIzClientMeta = any> {
-    (body?: any, params?: KVObject, query?: KVObject | string, type?: APIzClientType): Promise<any>;
-    (body: any, params: KVObject | string, type?: APIzClientType): Promise<any>;
-    (body: any, type: APIzClientType): Promise<any>;
-    (params: KVObject, query?: KVObject | string): Promise<any>;
-    (query: KVObject | string): Promise<any>;
-    (rawRequestOptions: RawRequestOptions, optionsFlag: boolean): Promise<any>;
+export interface GlobalAPIzOptions<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> {
+    client?: APIzClient<RawRequestOptions, ContentType, Meta, Method>;
+    paramRegex?: RegExp;
+    defaultType?: ContentType;
+    immutable?: boolean;
+    reset?: boolean;
+    querystring?: (obj: any) => string;
+}
+declare type ContentTypeFrom<R> = R extends Record<string, APIInfo<infer C, infer M>> ? C extends unknown ? any : C : never;
+declare type ProxyGroup<RawRequestOptions, T extends Record<string, APIInfo<any, any>>> = {
+    [k in keyof T]: RequestWithoutThis<RawRequestOptions, ContentTypeFrom<T>>;
+};
+export declare type APIzInstance<RawRequestOptions = any, T extends Record<string, APIInfo<any, any>> = Record<string, APIInfo<any, any>>, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase> = Omit<ProxyGroup<RawRequestOptions, T>, 'remove' | 'add'> & {
+    remove: (name: string) => APIzInstance<RawRequestOptions, T, Method>;
+    add: (name: string, apiInfo: T extends Record<string, infer I> ? I extends APIInfo<infer C, infer M> ? APIInfo<C extends unknown ? any : C, M extends unknown ? any : M> : never : never) => APIzInstance<RawRequestOptions, T, Method>;
+};
+export interface APIzRequestOptions<ContentType> {
+    body?: any;
+    params?: Record<string, string>;
+    query?: string | Record<string, any>;
+    headers?: Record<string, any>;
+    type?: ContentType;
+    handleError?: boolean;
+}
+export declare type RequestWithoutThis<RawRequestOptions, ContentType> = (options: APIzRequestOptions<ContentType> | RawRequestOptions, isRawOption?: boolean) => Promise<any>;
+export interface APIzRequest<RawRequestOptions, ContentType, Meta> {
+    (options: APIzRequestOptions<ContentType> | RawRequestOptions, isRawOption?: boolean): Promise<any>;
     readonly url: string;
     readonly method: HTTPMethodUpperCase;
-    readonly meta: APIzClientMeta;
-    readonly type: APIzClientType;
-    readonly pathParams: boolean;
+    readonly meta: Meta;
+    readonly type: ContentType;
 }
-declare type ProxyMeta<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType = any, APIzClientMeta = any> = {
-    [K in keyof Meta]: APIzRequest<RawRequestOptions, APIzClientType, APIzClientMeta>;
-};
-interface APIzMethod<APIzClientType = any, APIzClientMeta = any> {
-    add: (name: string, apiInfo: APIMetaInfo<APIzClientType, APIzClientMeta>) => this;
-    remove: (name: string) => this;
-}
-export declare type APIzInstance<RawRequestOptions, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType = any, APIzClientMeta = any> = APIzMethod<APIzClientType, APIzClientMeta> & Omit<ProxyMeta<RawRequestOptions, Meta, APIzClientType, APIzClientMeta>, 'add' | 'remove'>;
-declare function APIz<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, Meta extends APIMeta<APIzClientType, APIzClientMeta>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>(apiMeta: Meta, options?: APIzOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method>): APIzInstance<RawRequestOptions, Meta, APIzClientType, APIzClientMeta> | never;
-export { APIz };
-export declare function config<RawRequestOptions, Client extends APIzClient<RawRequestOptions, APIzClientType, APIzClientMeta, Method>, APIzClientType = any, APIzClientMeta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>({ querystring, paramRegex, immutableMeta, client, reset, defaultType: dt }?: GlobalOptions<RawRequestOptions, Client, APIzClientType, APIzClientMeta, Method>): void;
+export declare function APIz<RawRequestOptions = any, ContentType = any, Meta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase, T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<ContentType, Meta>>>(group: APIGroup<T>, options?: APIzOptions<RawRequestOptions, ContentType, Meta, Method>): APIzInstance<RawRequestOptions, T, Method>;
+export declare function config<RawRequestOptions, ContentType = any, Meta = any, Method extends HTTPMethodLowerCase = HTTPMethodLowerCase>({ querystring, paramRegex, immutable, client, reset, defaultType: dt }?: GlobalAPIzOptions<RawRequestOptions, ContentType, Meta, Method>): void;
+export {};
 //# sourceMappingURL=core.d.ts.map

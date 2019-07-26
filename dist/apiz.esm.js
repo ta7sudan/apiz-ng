@@ -1,36 +1,25 @@
 const toString = Map.call.bind(Object.prototype.toString);
 
-const isObj = o => toString(o) === '[object Object]';
+const isStr = s => s && typeof s === 'string';
 
 const isFn = f => typeof f === 'function';
 
-const isStr = s => s && typeof s === 'string';
+const isObj = o => toString(o) === '[object Object]';
 
 const isEnumerable = Map.call.bind(Object.prototype.propertyIsEnumerable);
-let defaultType,
-    globalQuerystring,
+let globalQuerystring,
     globalParamRegex,
-    // 这东西有没有, 是什么类型, 应该只能在运行时才能确定了, 或者分析控制流?
-// 那就随便写个类型吧...等到使用处as一下好了
-globalClient,
-    globalImmutableMeta = false; // ES2018+, 是讲这个特性没法被babel转译,
-// 那既然都用ES2018了, 不如把能用的特性都用上好了...
+    globalIsArgsImmutable = false,
+    globalClient,
+    defaultType;
 
 const defaultParamRegex = /:((\w|-)+)/g,
       slashRegex = /\/\//g,
-      methodMap = {
-  get: noBodyRequest,
-  head: noBodyRequest,
-  post: bodyRequest,
-  put: bodyRequest,
-  patch: bodyRequest,
-  // 尽管浏览器支持OPTIONS和DELETE带body, 但是考虑到不常用,
-  // 还是默认它们不带body, 如果需要的话, 可以直接开启完整选项加入body
-  // 有空改成可配置吧
-  options: noBodyRequest,
-  delete: noBodyRequest
-},
       replaceSlash = (m, o) => o <= 6 ? m : '/';
+
+function isAPIInfoWithURL(v) {
+  return !!v.url;
+}
 
 function parseApiInfo(name, rawInfo, {
   baseURL: gBaseURL,
@@ -38,22 +27,26 @@ function parseApiInfo(name, rawInfo, {
   querystring,
   client
 }) {
-  // tslint:disable-next-line
-  let {
-    url,
-    baseURL,
-    path,
-    meta,
+  const {
     method = 'GET',
     type = defaultType,
-    pathParams = false
+    meta
   } = rawInfo;
-  const info = {},
-        bURL = baseURL || gBaseURL;
+  let url, baseURL, path; // 照理讲放parseApiInfo外面显得更合理一点, 不过考虑到add和实例化的时候都要校验
 
   if (name === 'remove' || name === 'add') {
     throw new Error('"remove" and "add" is preserved key.');
   }
+
+  if (isAPIInfoWithURL(rawInfo)) {
+    url = rawInfo.url;
+  } else {
+    baseURL = rawInfo.baseURL;
+    path = rawInfo.path;
+  }
+
+  const info = {},
+        bURL = baseURL || gBaseURL;
 
   if (!isObj(rawInfo)) {
     throw new TypeError(`API ${name} expected an object, but received ${JSON.stringify(rawInfo)}.`);
@@ -67,11 +60,11 @@ function parseApiInfo(name, rawInfo, {
     throw new Error(`API "${name}" must set url or baseURL correctly.`);
   }
 
-  method = method.toUpperCase();
-  const methodLowerCase = method.toLowerCase();
+  const methodUpperCase = method.toUpperCase(),
+        methodLowerCase = method.toLowerCase();
 
-  if (!(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].indexOf(method) !== -1)) {
-    throw new Error(`Unsupported HTTP method: ${method}.`);
+  if (!(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].indexOf(methodUpperCase) !== -1)) {
+    throw new Error(`Unsupported HTTP method: ${methodUpperCase}.`);
   }
 
   if (!isFn(client[methodLowerCase])) {
@@ -84,12 +77,10 @@ function parseApiInfo(name, rawInfo, {
   info.path = `/${parts.slice(offset).join('/')}`;
   info.name = name;
   info.meta = meta;
-  info.method = method;
-  info.methodLowerCase = methodLowerCase; // 前面已经确保了client实现了该method
-
-  info[methodLowerCase] = client[methodLowerCase];
+  info.method = methodUpperCase;
+  info.methodLowerCase = methodLowerCase;
+  info.client = client;
   info.type = type;
-  info.pathParams = pathParams;
   info.regex = paramRegex;
   info.querystring = querystring;
   info.init = true;
@@ -104,47 +95,45 @@ function replaceParams(params) {
 
     return encodeURIComponent(params[v]);
   };
-} // 其实noBodyRequest和bodyRequest我们可以合并成一个,
-// 因为我们已经知道method了, 也就可以知道它是否会带body,
-// 但是考虑到让代码更加清晰一点, 还是拆成两个吧, 这点
-// 代码重复算是可以接受. 另一方面讲, 其实也可以让接口只
-// 实现一个request方法就好, 而不用对每个HTTP方法都实现一个
-// 对应的方法, 因为我们也可以把method传过去
+}
 
-
-function noBodyRequest(...args) {
+function request(options, isRawOption) {
+  // $以区分全局变量
   const {
     methodLowerCase,
-    pathParams,
+    type: $defaultType,
     regex,
     querystring,
     baseURL,
-    path
+    path,
+    client,
+    meta
   } = this;
-  let params,
-      query,
-      qs,
+  let qs,
+      // tslint:disable-next-line
+  {
+    query,
+    params,
+    body,
+    headers,
+    type,
+    handleError
+  } = options || {},
       url = this.url;
 
-  if (args[1] === true) {
-    // 接口处记得检测对象是否为空
-    return this[methodLowerCase]({
+  if (isRawOption === true) {
+    return client[methodLowerCase]({
       url,
       name: this.name,
-      meta: this.meta,
-      options: args[0]
+      handleError,
+      options: options
     });
-  } else if (pathParams) {
-    params = args[0];
-    query = args[1];
-  } else {
-    query = args[0];
   }
+
+  type === undefined && (type = $defaultType);
 
   if (params) {
     url = baseURL + path.replace(regex, replaceParams(params));
-  } else if (pathParams) {
-    throw new Error('Path params is required.');
   }
 
   if (query) {
@@ -152,84 +141,21 @@ function noBodyRequest(...args) {
     url = url.indexOf('?') !== -1 ? `${url}&${qs}` : `${url}?${qs}`;
   }
 
-  return this[methodLowerCase]({
+  return client[methodLowerCase]({
     url,
     name: this.name,
-    meta: this.meta
-  });
-}
-
-function bodyRequest(...args) {
-  // $以区分全局变量
-  const {
-    methodLowerCase,
-    type: $defaultType,
-    pathParams,
-    regex,
-    querystring,
-    baseURL,
-    path
-  } = this;
-  let params,
-      query,
-      body,
-      type,
-      qs,
-      url = this.url;
-
-  if (args[1] === true) {
-    return this[methodLowerCase]({
-      url,
-      type,
-      name: this.name,
-      meta: this.meta,
-      options: args[0]
-    });
-  } else if (pathParams) {
-    params = args[1];
-    query = args[2];
-    type = args[3] || $defaultType;
-  } else {
-    query = args[1];
-    type = args[2] || $defaultType;
-  }
-
-  body = args[0];
-
-  if (params) {
-    url = baseURL + path.replace(regex, replaceParams(params));
-  } else if (pathParams) {
-    throw new Error('Path params is required.');
-  } // 这里实际上会造成带body的query的集合和不带body的query的集合不一致,
-  // 不过考虑实际情况这样的不一致也是可以接受
-
-
-  if (isStr(query) && !(query.indexOf('=') !== -1)) {
-    type = query;
-  } else if (query) {
-    qs = querystring(query);
-    url = url.indexOf('?') !== -1 ? `${url}&${qs}` : `${url}?${qs}`;
-  }
-
-  return this[methodLowerCase]({
-    url,
+    handleError,
+    meta,
     type,
     body,
-    name: this.name,
-    meta: this.meta
+    headers,
+    query
   });
 }
 
 function createAPI(info) {
-  // const fn = methodMap[info.method]
-  const f = methodMap[info.methodLowerCase]; // 因为在parseApiInfo的时候已经判断过了, 所以这里不需要判断了, 可以确定f不为空
-  // 但是如果哪天重构把前面的判断去掉了, 这里记得加回来
-  // if (!f) {
-  // 	throw new Error(`APIzClient must implement ${info.methodLowerCase} method.`);
-  // }
-
-  const fn = f.bind(info);
-  ['url', 'method', 'meta', 'type', 'pathParams'].forEach(k => {
+  const fn = request.bind(info);
+  ['url', 'method', 'meta', 'type'].forEach(k => {
     Object.defineProperty(fn, k, {
       value: info[k],
       enumerable: true,
@@ -237,50 +163,19 @@ function createAPI(info) {
     });
   });
   return fn;
-} // 理想情况下是这样的
-// class APIz<T, M, N extends APIMeta<T, M>> {
-// 	public add: (name: string, apiInfo: APIMetaInfo<T, M>) => this;
-// 	public remove: (name: string) => this;
-// 	[K in key of N]: object;
-// 	constructor(apiMeta: N, options: APIzOptions<>) {
-// 	}
-// }
-// type ProxyMeta<T, M, N extends APIMeta<T, M>> = {
-// 	[K in keyof N]: object;
-// };
-// TODO 这里有重载, params还是query由配置选项中的pathParams作为隐式参数决定了
-// type APIzRequestWithBody<T extends string> = ((body: any, params: KVObject, query: KVObject | string, type: T) => Promise<any>)
-// 	| ((body: any, params: KVObject, query: KVObject | string) => Promise<any>)
-// 	| ((body: any, params: KVObject, type: T) => Promise<any>)
-// 	| ((body: any, params: KVObject) => Promise<any>)
-// 	| ((body: any, query: KVObject | string, type: T) => Promise<any>)
-// 	| ((body: any, query: KVObject | string) => Promise<any>)
-// 	| ((body: any, type: T) => Promise<any>)
-// 	| ((body: any) => Promise<any>);
-// // TODO 这里有重载, params还是query由配置选项中的pathParams作为隐式参数决定了
-// type APIzRequestWithoutBody = ((params: KVObject, query: KVObject | string) => Promise<any>)
-// 	| ((params: KVObject) => Promise<any>)
-// 	| ((query: KVObject | string) => Promise<any>)
-// 	| (() => Promise<any>);
-// type APIzConstructor<C, T extends string, M, N extends APIMeta<T, M>> =	new (apiMeta: N, options: APIzOptions<C>) => APIzInstance<T, M, N>;
-// class不知道怎么实现mapped types, 用function又没办法直接
-// 实现上面的constructor接口, 只能是让ts中不允许new调用, js中运行new调用了
-// 其实也没什么影响, 除了看上去不那么面向对象少个new
-// 另外泛型参数过多有什么好的解决办法?
+}
 
-
-function APIz(apiMeta, options) {
+function APIz(group, options) {
   let baseURL,
-      immutableMeta,
+      immutable,
       paramRegex,
       querystring,
       client,
-      meta = {};
-  isStr(apiMeta._baseURL) && (baseURL = apiMeta._baseURL);
+      apiInfoGroup = {};
+  isStr(group.baseURL) && (baseURL = group.baseURL);
   ({
     baseURL = baseURL,
-    // 这里undefined没什么影响, 视为boolean没问题
-    immutableMeta = globalImmutableMeta,
+    immutable = globalIsArgsImmutable,
     paramRegex = globalParamRegex || defaultParamRegex,
     // 这里querystring虽然可能为undefined, 但是后面立马检测了是否为callable,
     // 为了给js用户提示, 所以这里也可以暂时视为不为undefined
@@ -302,15 +197,17 @@ function APIz(apiMeta, options) {
     querystring,
     client
   };
+  const apis = group.apis;
 
-  if (immutableMeta) {
-    meta = apiMeta || {};
+  if (immutable) {
+    apiInfoGroup = apis || {};
   } else {
     // 不用Object.keys, 允许配置对象继承
-    for (const key in apiMeta) {
-      if (isObj(apiMeta[key])) {
-        meta[key] = parseApiInfo(key, apiMeta[key], groupOptions);
-      } else if (key !== '_baseURL') {
+    for (const key in apis) {
+      // tslint:disable-next-line
+      if (isObj(apis[key])) {
+        apiInfoGroup[key] = parseApiInfo(key, apis[key], groupOptions);
+      } else {
         console.warn(`The ${key} in meta is not an object.`);
       }
     }
@@ -318,15 +215,13 @@ function APIz(apiMeta, options) {
 
   const pxy = new Proxy({}, {
     get(target, key, receiver) {
-      if (!meta[key] || !isEnumerable(meta, key)) {
+      if (!apiInfoGroup[key] || !isEnumerable(apiInfoGroup, key)) {
         return Reflect.get(target, key);
-      } else if (!meta[key].init) {
-        meta[key] = parseApiInfo(key, meta[key], groupOptions);
-      } // 到这里有个meta[key]在运行时从APIMetaInfo到ParsedAPIMetaInfo的类型转换
-      // 只能是强行as了
+      } else if (!apiInfoGroup[key].init) {
+        apiInfoGroup[key] = parseApiInfo(key, apiInfoGroup[key], groupOptions);
+      }
 
-
-      const apiFn = createAPI(meta[key]);
+      const apiFn = createAPI(apiInfoGroup[key]);
       Reflect.set(receiver, key, apiFn);
       return apiFn;
     },
@@ -339,18 +234,18 @@ function APIz(apiMeta, options) {
   const self = Object.create(pxy);
 
   self.remove = function (name) {
-    this[name] && (meta[name] = this[name] = undefined);
+    this[name] && (apiInfoGroup[name] = this[name] = undefined);
     return this;
   };
 
   self.add = function (name, apiInfo) {
-    if (meta[name]) {
+    if (apiInfoGroup[name]) {
       throw new Error(`API "${name}" already exists.`);
     }
 
-    meta[name] = parseApiInfo(name, apiInfo, groupOptions); // 同前面一样存在运行时类型转换
+    apiInfoGroup[name] = parseApiInfo(name, apiInfo, groupOptions); // 同前面一样存在运行时类型转换
 
-    this[name] = createAPI(meta[name]);
+    this[name] = createAPI(apiInfoGroup[name]);
     return this;
   };
 
@@ -359,7 +254,7 @@ function APIz(apiMeta, options) {
 function config({
   querystring,
   paramRegex,
-  immutableMeta,
+  immutable,
   client,
   reset,
   defaultType: dt
@@ -368,10 +263,10 @@ function config({
 }) {
   isFn(querystring) && (globalQuerystring = querystring);
   paramRegex instanceof RegExp && (globalParamRegex = paramRegex);
-  globalImmutableMeta = immutableMeta;
+  globalIsArgsImmutable = immutable;
   globalClient = client;
   defaultType = dt;
-  reset && (globalQuerystring = globalParamRegex = globalClient = defaultType = undefined, globalImmutableMeta = false);
+  reset && (globalQuerystring = globalParamRegex = globalClient = defaultType = undefined, globalIsArgsImmutable = false);
 }
 
 const querystring = function (obj) {

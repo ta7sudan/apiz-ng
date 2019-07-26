@@ -21,8 +21,10 @@ test.beforeEach(() => {
 
 test.serial('without querystring', t => {
 	const apiMeta = {
-		getBook: {
-			url: 'http://www.a.com'
+		apis: {
+			getBook: {
+				url: 'http://www.a.com'
+			}
 		}
 	};
 	try {
@@ -34,8 +36,10 @@ test.serial('without querystring', t => {
 
 test.serial('without client', t => {
 	const apiMeta = {
-		getBook: {
-			url: 'http://www.a.com'
+		apis: {
+			getBook: {
+				url: 'http://www.a.com'
+			}
 		}
 	};
 	config({ querystring });
@@ -54,8 +58,10 @@ test.serial('without baseURL', t => {
 		}
 	});
 	const apiMeta = {
-		getBook: {
-			path: '/test/:book/test'
+		apis: {
+			getBook: {
+				path: '/test/:book/test'
+			}
 		}
 	};
 	try {
@@ -73,9 +79,11 @@ test.serial('client implements method is not a function', t => {
 		}
 	});
 	const apiMeta = {
-		getBook: {
-			baseURL: 'http://www.a.com',
-			path: '/test/:book/test'
+		apis: {
+			getBook: {
+				baseURL: 'http://www.a.com',
+				path: '/test/:book/test'
+			}
 		}
 	};
 	try {
@@ -93,10 +101,12 @@ test.serial('meta data with invalid HTTP method', t => {
 		}
 	});
 	const apiMeta = {
-		getBook: {
-			baseURL: 'http://www.a.com',
-			path: '/test/:book/test',
-			method: 'test'
+		apis: {
+			getBook: {
+				baseURL: 'http://www.a.com',
+				path: '/test/:book/test',
+				method: 'test'
+			}
 		}
 	};
 	try {
@@ -111,11 +121,12 @@ test.serial('global config', t => {
 	const defaultType = 'defaultType';
 	const paramRegex = /{(\w+)}/g;
 	const apiMeta = {
-		getBook: {
-			baseURL: 'http://www.a.com',
-			path: '/test/{book}/test',
-			method: 'post',
-			pathParams: true
+		apis: {
+			getBook: {
+				baseURL: 'http://www.a.com',
+				path: '/test/{book}/test',
+				method: 'post'
+			}
 		}
 	};
 
@@ -136,13 +147,15 @@ test.serial('global config', t => {
 	const group0 = new APIz(apiMeta);
 	group0.getBook(
 		{
-			body: 'test'
-		},
-		{
-			book: 'CSAPP'
-		},
-		{
-			query: 'aaa'
+			body: {
+				body: 'test'
+			},
+			params: {
+				book: 'CSAPP'
+			},
+			query: {
+				query: 'aaa'
+			}
 		}
 	);
 	t.is(group0.getBook.type, 'defaultType');
@@ -150,13 +163,15 @@ test.serial('global config', t => {
 	const group1 = new APIz(apiMeta);
 	group1.getBook(
 		{
-			body: 'test'
-		},
-		{
-			book: 'CSAPP'
-		},
-		{
-			query: 'aaa'
+			body: {
+				body: 'test'
+			},
+			params: {
+				book: 'CSAPP'
+			},
+			query: {
+				query: 'aaa'
+			}
 		}
 	);
 	t.is(group1.getBook.type, 'defaultType');
@@ -167,11 +182,12 @@ test.serial('group config', t => {
 	const defaultType = 'defaultType';
 	const paramRegex = /{(\w+)}/g;
 	const apiMeta = {
-		getBook: {
-			baseURL: 'http://www.a.com',
-			path: '/test/:book/test',
-			method: 'post',
-			pathParams: true
+		apis: {
+			getBook: {
+				baseURL: 'http://www.a.com',
+				path: '/test/:book/test',
+				method: 'post'
+			}
 		}
 	};
 
@@ -204,13 +220,15 @@ test.serial('group config', t => {
 	});
 	apis.getBook(
 		{
-			body: 'test'
-		},
-		{
-			book: 'CSAPP'
-		},
-		{
-			query: 'aaa'
+			body: {
+				body: 'test'
+			},
+			params: {
+				book: 'CSAPP'
+			},
+			query: {
+				query: 'aaa'
+			}
 		}
 	);
 	t.is(apis.getBook.type, 'defaultType');
@@ -230,25 +248,29 @@ test.serial('use meta baseURL', t => {
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getBook: {
-			baseURL: 'http://www.b.com',
-			path: '/test/:book/aaa',
-			pathParams: true
-		},
-		getUser: {
-			path: '/test/:user/bbb',
-			pathParams: true
+		baseURL: 'http://www.a.com',
+		apis: {
+			getBook: {
+				baseURL: 'http://www.b.com',
+				path: '/test/:book/aaa'
+			},
+			getUser: {
+				path: '/test/:user/bbb'
+			}
 		}
 	};
 
 	const apis = new APIz(apiMeta);
 	apis.getBook({
-		book: 'SICP'
+		params: {
+			book: 'SICP'
+		}
 	});
 
 	apis.getUser({
-		user: 'Tom'
+		params: {
+			user: 'Tom'
+		}
 	});
 });
 
@@ -266,15 +288,15 @@ test.serial('use group baseURL', t => {
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getBook: {
-			baseURL: 'http://www.b.com',
-			path: '/test/:book/aaa',
-			pathParams: true
-		},
-		getUser: {
-			path: '/test/:user/bbb',
-			pathParams: true
+		baseURL: 'http://www.a.com',
+		apis: {
+			getBook: {
+				baseURL: 'http://www.b.com',
+				path: '/test/:book/aaa'
+			},
+			getUser: {
+				path: '/test/:user/bbb'
+			}
 		}
 	};
 
@@ -282,27 +304,33 @@ test.serial('use group baseURL', t => {
 		baseURL: 'http://www.c.com'
 	});
 	apis.getBook({
-		book: 'SICP'
+		params: {
+			book: 'SICP'
+		}
 	});
 
 	apis.getUser({
-		user: 'Tom'
+		params: {
+			user: 'Tom'
+		}
 	});
 });
 
 test.serial('use global immutableMeta', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get: 5
 		}
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getBook: {
-			path: '/test/:book/aaa'
+		baseURL: 'http://www.a.com',
+		apis: {
+			getBook: {
+				path: '/test/:book/aaa'
+			}
 		}
 	};
 
@@ -314,7 +342,9 @@ test.serial('use global immutableMeta', t => {
 	}
 	try {
 		apis.getBook({
-			book: 'CSAPP'
+			params: {
+				book: 'CSAPP'
+			}
 		});
 	} catch (err) {
 		t.regex(err.message, /client must implement a/);
@@ -324,23 +354,25 @@ test.serial('use global immutableMeta', t => {
 test.serial('use group immutableMeta', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get: 5
 		}
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getBook: {
-			path: '/test/:book/aaa'
+		baseURL: 'http://www.a.com',
+		apis: {
+			getBook: {
+				path: '/test/:book/aaa'
+			}
 		}
 	};
 
 	let apis = null;
 	try {
 		apis = new APIz(apiMeta, {
-			immutableMeta: false
+			immutable: false
 		});
 	} catch (e) {
 		t.pass();
@@ -348,7 +380,9 @@ test.serial('use group immutableMeta', t => {
 	}
 	try {
 		apis.getBook({
-			book: 'CSAPP'
+			params: {
+				book: 'CSAPP'
+			}
 		});
 	} catch (err) {
 		t.fail();
@@ -358,7 +392,7 @@ test.serial('use group immutableMeta', t => {
 test.serial('inherited from APIz', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get() { }
 		}
@@ -372,7 +406,7 @@ test.serial('inherited from APIz', t => {
 test.serial('properties of Object prototype', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get() { }
 		}
@@ -386,7 +420,7 @@ test.serial('properties of Object prototype', t => {
 test.serial('add new API', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
@@ -402,17 +436,18 @@ test.serial('add new API', t => {
 	);
 
 	apis.add('getBook', {
-		path: '/test/:book/aaa',
-		pathParams: true
+		path: '/test/:book/aaa'
 	});
 
 	apis.getBook(
 		{
-			book: 'CSAPP'
-		},
-		{
-			key1: 'value1',
-			key2: 'value2'
+			params: {
+				book: 'CSAPP'
+			},
+			query: {
+				key1: 'value1',
+				key2: 'value2'
+			}
 		}
 	);
 });
@@ -420,7 +455,7 @@ test.serial('add new API', t => {
 test.serial('add an API already exists', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
@@ -430,9 +465,10 @@ test.serial('add an API already exists', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -442,8 +478,7 @@ test.serial('add an API already exists', t => {
 
 	try {
 		apis.add('getBook', {
-			path: '/test/:book/aaa',
-			pathParams: true
+			path: '/test/:book/aaa'
 		});
 	} catch (e) {
 		t.regex(e.message, /already exists./);
@@ -453,7 +488,7 @@ test.serial('add an API already exists', t => {
 test.serial('remove an API already exists', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
@@ -463,9 +498,10 @@ test.serial('remove an API already exists', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -485,7 +521,7 @@ test.serial('remove an API already exists', t => {
 test.serial('remove an API with delete', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=value2');
@@ -495,9 +531,10 @@ test.serial('remove an API with delete', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -509,11 +546,13 @@ test.serial('remove an API with delete', t => {
 	try {
 		apis.getBook(
 			{
-				book: 'CSAPP'
-			},
-			{
-				key1: 'value1',
-				key2: 'value2'
+				params: {
+					book: 'CSAPP'
+				},
+				query: {
+					key1: 'value1',
+					key2: 'value2'
+				}
 			}
 		);
 	} catch (e) {
@@ -524,7 +563,7 @@ test.serial('remove an API with delete', t => {
 test.serial('invalid querystring', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?555');
@@ -534,9 +573,10 @@ test.serial('invalid querystring', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -546,16 +586,18 @@ test.serial('invalid querystring', t => {
 
 	apis.getBook(
 		{
-			book: 'CSAPP'
-		},
-		555
+			params: {
+				book: 'CSAPP'
+			},
+			query: 555
+		}
 	);
 });
 
 test.serial('querystring type is string', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key0=000&key1=111');
@@ -565,9 +607,10 @@ test.serial('querystring type is string', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -577,15 +620,18 @@ test.serial('querystring type is string', t => {
 
 	apis.getBook(
 		{
-			book: 'CSAPP'
-		}, 'key0=000&key1=111'
+			params: {
+				book: 'CSAPP'
+			},
+			query: 'key0=000&key1=111'
+		}
 	);
 });
 
 test.serial('querystring has array', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa?key1=value1&key2=1&key2=2&key2=3');
@@ -595,9 +641,10 @@ test.serial('querystring has array', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -607,11 +654,13 @@ test.serial('querystring has array', t => {
 
 	apis.getBook(
 		{
-			book: 'CSAPP'
-		},
-		{
-			key1: 'value1',
-			key2: [1, 2, 3]
+			params: {
+				book: 'CSAPP'
+			},
+			query: {
+				key1: 'value1',
+				key2: [1, 2, 3]
+			}
 		}
 	);
 });
@@ -620,7 +669,7 @@ test.serial('querystring has array', t => {
 test.serial('invalid params', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get() {
 				t.fail();
@@ -630,9 +679,10 @@ test.serial('invalid params', t => {
 
 	const apis = new APIz(
 		{
-			getBook: {
-				path: '/test/:book/aaa',
-				pathParams: true
+			apis: {
+				getBook: {
+					path: '/test/:book/aaa'
+				}
 			}
 		},
 		{
@@ -643,7 +693,9 @@ test.serial('invalid params', t => {
 	try {
 		apis.getBook(
 			{
-				nobook: 'CSAPP'
+				params: {
+					nobook: 'CSAPP'
+				}
 			}
 		);
 	} catch (e) {
@@ -654,7 +706,7 @@ test.serial('invalid params', t => {
 test.serial('body with type', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			post({ url, body, options, type }) {
 				t.is(url, 'http://www.a.com/test/CSAPP/aaa');
@@ -669,10 +721,11 @@ test.serial('body with type', t => {
 
 	const apis = new APIz(
 		{
-			addBook: {
-				path: '/test/:book/aaa',
-				method: 'post',
-				pathParams: true
+			apis: {
+				addBook: {
+					path: '/test/:book/aaa',
+					method: 'post'
+				}
 			}
 		},
 		{
@@ -681,16 +734,20 @@ test.serial('body with type', t => {
 	);
 
 	apis.addBook({
-		body: 'post'
-	}, {
-		book: 'CSAPP'
-	}, 'form');
+		body: {
+			body: 'post'
+		},
+		params: {
+			book: 'CSAPP'
+		},
+		type: 'form'
+	});
 });
 
 test.serial('use preserved key', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get() {
 				t.fail();
@@ -698,13 +755,26 @@ test.serial('use preserved key', t => {
 		}
 	});
 
-	const apis = new APIz({});
 	try {
+		new APIz({
+			apis: {
+				baseURL: 'test',
+				add: {
+					path: 'test'
+				}
+			}
+		});
+	} catch (e) {
+		t.is(e.message, '"remove" and "add" is preserved key.');
+	}
+	try {
+		const apis = new APIz({});
 		apis.add('add', {});
 	} catch (e) {
 		t.is(e.message, '"remove" and "add" is preserved key.');
 	}
 	try {
+		const apis = new APIz({});
 		apis.add('remove', {});
 	} catch (e) {
 		t.is(e.message, '"remove" and "add" is preserved key.');
@@ -714,15 +784,17 @@ test.serial('use preserved key', t => {
 test.serial('invalid api info 0', t => {
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get() {}
 		}
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getBook: 233
+		baseURL: 'http://www.a.com',
+		apis: {
+			getBook: 233
+		}
 	};
 
 	const apis = new APIz(apiMeta);
@@ -742,8 +814,10 @@ test.serial('invalid api info 1', t => {
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getBook: 233
+		baseURL: 'http://www.a.com',
+		apis: {
+			getBook: 233
+		}
 	};
 
 	const apis = new APIz(apiMeta);
@@ -754,7 +828,7 @@ test.serial('all options', t => {
 	let count = 0;
 	config({
 		querystring,
-		immutableMeta: true,
+		immutable: true,
 		client: {
 			get({ url, options }) {
 				switch (count++) {
@@ -805,7 +879,7 @@ test.serial('all options', t => {
 						break;
 					case 9:
 						t.is(url, 'http://www.a.com/test/000/aaa/111');
-						t.is(body, null);
+						t.is(body, undefined);
 						t.is(type, 'json');
 						break;
 					case 10:
@@ -833,34 +907,32 @@ test.serial('all options', t => {
 	});
 
 	const apiMeta = {
-		_baseURL: 'http://www.a.com',
-		getData0: {
-			url: 'http://www.b.com/data0/:data0/test/:data1?test=1',
-			pathParams: true
-		},
-		getData1: {
-			url: 'http://www.c.com/data1/',
-			baseURL: 'http://www.cc.com',
-			path: '/test/:data0/aaa/:data1/',
-			pathParams: true
-		},
-		getData2: {
-			baseURL: 'http://www.d.com/data2/:data0/test',
-			path: '/:data1/',
-			pathParams: true
-		},
-		getData3: {
-			path: '/test'
-		},
-		postData0: {
-			path: '/test/:data0/aaa/:data1',
-			method: 'post',
-			type: 'json',
-			pathParams: true
-		},
-		postData1: {
-			path: '/test',
-			method: 'post'
+		baseURL: 'http://www.a.com',
+		apis: {
+			getData0: {
+				url: 'http://www.b.com/data0/:data0/test/:data1?test=1'
+			},
+			getData1: {
+				url: 'http://www.c.com/data1/',
+				baseURL: 'http://www.cc.com',
+				path: '/test/:data0/aaa/:data1/'
+			},
+			getData2: {
+				baseURL: 'http://www.d.com/data2/:data0/test',
+				path: '/:data1/'
+			},
+			getData3: {
+				path: '/test'
+			},
+			postData0: {
+				path: '/test/:data0/aaa/:data1',
+				method: 'post',
+				type: 'json'
+			},
+			postData1: {
+				path: '/test',
+				method: 'post'
+			}
 		}
 	};
 
@@ -869,52 +941,66 @@ test.serial('all options', t => {
 	// case0
 	apis.getData0(
 		{
-			data0: '000',
-			data1: 111
-		},
-		{
-			key0: 'aaa',
-			key1: 'bbb'
+			params: {
+				data0: '000',
+				data1: 111
+			},
+			query: {
+				key0: 'aaa',
+				key1: 'bbb'
+			}
 		}
 	);
 
 	// case1
 	apis.getData0({
-		data0: '000',
-		data1: 111
+		params: {
+			data0: '000',
+			data1: 111
+		}
 	});
 
-	try {
-		apis.getData0(null, {
-			key0: '000',
-			key1: 111
-		});
-	} catch (e0) {
-		t.is(e0.message, 'Path params is required.');
-	}
+	// try {
+	// 	apis.getData0({
+	// 		query: {
+	// 			key0: '000',
+	// 			key1: 111
+	// 		}
+	// 	});
+	// } catch (e0) {
+	// 	t.is(e0.message, 'Path params is required.');
+	// }
 
 	// case2
 	apis.getData1({
-		data0: '测试',
-		data1: 111
-	}, {
-		key0: '测试',
-		key1: 111
+		params: {
+			data0: '测试',
+			data1: 111
+		},
+		query: {
+			key0: '测试',
+			key1: 111
+		}
 	});
 
 	// case3
 	apis.getData2({
-		data0: '测试',
-		data1: 111
-	}, {
-		key0: '测试',
-		key1: 111
+		params: {
+			data0: '测试',
+			data1: 111
+		},
+		query: {
+			key0: '测试',
+			key1: 111
+		}
 	});
 
 	// case4
 	apis.getData3({
-		key0: '000',
-		key1: 111
+		query: {
+			key0: '000',
+			key1: 111
+		}
 	});
 
 	// case5
@@ -927,48 +1013,59 @@ test.serial('all options', t => {
 		}
 	}, true);
 
-	try {
-		apis.postData0();
-	} catch (e1) {
-		t.is(e1.message, 'Path params is required.');
-	}
+	// try {
+	// 	apis.postData0();
+	// } catch (e1) {
+	// 	t.is(e1.message, 'Path params is required.');
+	// }
 
-	try {
-		apis.postData0({
-			body: 'body'
-		});
-	} catch (e1) {
-		t.is(e1.message, 'Path params is required.');
-	}
+	// try {
+	// 	apis.postData0({
+	// 		body: 'body'
+	// 	});
+	// } catch (e1) {
+	// 	t.is(e1.message, 'Path params is required.');
+	// }
 
 	// case7
 	apis.postData0({
-		body: 'body'
-	}, {
-		data0: '000',
-		data1: 111
-	}, {
-		key0: '000',
-		key1: 111
+		body: {
+			body: 'body'
+		},
+		params: {
+			data0: '000',
+			data1: 111
+		},
+		query: {
+			key0: '000',
+			key1: 111
+		}
 	});
 
 	// case8
 	apis.postData0({
-		body: 'body'
-	}, {
-		data0: '000',
-		data1: 111
+		body: {
+			body: 'body'
+		},
+		params: {
+			data0: '000',
+			data1: 111
+		}
 	});
 
 	// case9
-	apis.postData0(null, {
-		data0: '000',
-		data1: 111
+	apis.postData0({
+		params: {
+			data0: '000',
+			data1: 111
+		}
 	});
 
 	// case10
 	apis.postData1({
-		body: 'body'
+		body: {
+			body: 'body'
+		}
 	});
 
 	// case11
@@ -980,9 +1077,12 @@ test.serial('all options', t => {
 
 	// case12
 	apis.postData1({
-		body: 'body'
-	}, {
-		key0: '000',
-		key1: 111
+		body: {
+			body: 'body'
+		},
+		query: {
+			key0: '000',
+			key1: 111
+		}
 	});
 });

@@ -7,6 +7,7 @@
 	"jsRules": {},
 	"rules": {
 		"semicolon": [true, "always", "ignore-interfaces"],
+		"ordered-imports": false,
 		"no-console": false,
 		"one-variable-per-declaration": false,
 		"no-unused-expression": false,
