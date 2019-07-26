@@ -22,6 +22,7 @@ module.exports = {
 		console.log(req.body);
 		return {
 			info: req.body,
+			version: parseInt(req.query.version, 10) || 1,
 			message: 'post'
 		};
 	},

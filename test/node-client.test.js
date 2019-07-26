@@ -8,7 +8,7 @@ const isObj = o => Object.prototype.toString.call(o) === '[object Object]';
 
 test.before(() => {
 	config({
-		immutableMeta: true
+		immutable: true
 	});
 });
 
@@ -34,12 +34,14 @@ test('get with params', async t => {
 
 	let resp = await apis.getBook(
 		{
-			bookName: 'CSAPP',
-			other: 'test'
-		},
-		{
-			version: 2,
-			otherKey: '测试'
+			params: {
+				bookName: 'CSAPP',
+				other: 'test'
+			},
+			query: {
+				version: 2,
+				otherKey: '测试'
+			}
 		}
 	);
 	t.is(resp.body, JSON.stringify({
@@ -70,7 +72,9 @@ test('get without query', async t => {
 	});
 
 	let resp = await apis.getBook({
-		bookName: 'SICP'
+		params: {
+			bookName: 'SICP'
+		}
 	});
 
 	t.is(resp.body, JSON.stringify({
@@ -98,9 +102,12 @@ test('head with query', async t => {
 	});
 
 	let resp = await apis.queryBook({
-		bookName: 'CSAPP'
-	}, {
-		version: 2
+		params: {
+			bookName: 'CSAPP'
+		},
+		query: {
+			version: 2
+		}
 	});
 
 	t.is(resp.body, '');
@@ -113,13 +120,16 @@ test('post with body', async t => {
 	});
 
 	let resp = await apis.addBook({
-		bookName: 'HTDP'
+		body: {
+			bookName: 'HTDP'
+		}
 	});
 
 	t.deepEqual(resp.body, {
 		info: {
 			bookName: 'HTDP'
 		},
+		version: 1,
 		message: 'post'
 	});
 });
@@ -131,15 +141,19 @@ test('post with body and query', async t => {
 	});
 
 	let resp = await apis.addBook({
-		bookName: 'HTDP'
-	}, {
-		version: 1
+		body: {
+			bookName: 'HTDP'
+		},
+		query: {
+			version: 2
+		}
 	});
 
 	t.deepEqual(resp.body, {
 		info: {
-			bookName: 'HTDP'
+			bookName: 'HTDP',
 		},
+		version: 2,
 		message: 'post'
 	});
 });
@@ -151,10 +165,11 @@ test('post without body', async t => {
 
 	let resp = await apis.addBook();
 
-	t.is(resp.body, JSON.stringify({
+	t.deepEqual(resp.body, {
 		info: null,
+		version: 1,
 		message: 'post'
-	}));
+	});
 });
 
 test('put with body, params and query', async t => {
@@ -163,11 +178,15 @@ test('put with body, params and query', async t => {
 	});
 
 	let resp = await apis.updateBook({
-		body: 'put'
-	}, {
-		bookName: 'CSAPP'
-	}, {
-		query: 'aaa'
+		body: {
+			body: 'put'
+		},
+		params: {
+			bookName: 'CSAPP'
+		},
+		query: {
+			query: 'aaa'
+		}
 	});
 
 	t.deepEqual(resp.body, {
@@ -184,9 +203,12 @@ test('put with body and query', async t => {
 	});
 
 	let resp = await apis.updateBook({
-		body: 'put'
-	}, {
-		bookName: 'CSAPP'
+		body: {
+			body: 'put'
+		},
+		params: {
+			bookName: 'CSAPP'
+		}
 	});
 
 	t.deepEqual(resp.body, {
@@ -202,14 +224,16 @@ test('put without body', async t => {
 		client: apizclient()
 	});
 
-	let resp = await apis.updateBook(null, {
-		bookName: 'CSAPP'
+	let resp = await apis.updateBook({
+		params: {
+			bookName: 'CSAPP'
+		}
 	});
 
-	t.is(resp.body, JSON.stringify({
+	t.deepEqual(resp.body, {
 		info: null,
 		message: 'put'
-	}));
+	});
 });
 
 test('patch with body, params, query', async t => {
@@ -218,12 +242,16 @@ test('patch with body, params, query', async t => {
 	});
 
 	let resp = await apis.modifyBook({
-		body: 'patch'
-	}, {
-		bookName: 'SICP'
-	}, {
-		query0: 111,
-		query1: '测试'
+		body: {
+			body: 'patch'
+		},
+		params: {
+			bookName: 'SICP'
+		},
+		query: {
+			query0: 111,
+			query1: '测试'
+		}
 	});
 
 	t.deepEqual(resp.body, {
@@ -240,9 +268,12 @@ test('patch with body, params', async t => {
 	});
 
 	let resp = await apis.modifyBook({
-		body: 'patch'
-	}, {
-		bookName: 'SICP'
+		body: {
+			body: 'patch'
+		},
+		params: {
+			bookName: 'SICP'
+		}
 	});
 
 	t.deepEqual(resp.body, {
@@ -258,14 +289,16 @@ test('patch without body', async t => {
 		client: apizclient()
 	});
 
-	let resp = await apis.modifyBook(null, {
-		bookName: 'SICP'
+	let resp = await apis.modifyBook({
+		params: {
+			bookName: 'SICP'
+		}
 	});
 
-	t.is(resp.body, JSON.stringify({
+	t.deepEqual(resp.body, {
 		info: null,
 		message: 'patch'
-	}));
+	});
 });
 
 test('delete with params and query', async t => {
@@ -274,16 +307,19 @@ test('delete with params and query', async t => {
 	});
 
 	let resp = await apis.removeBook({
-		bookName: 'HTDP'
-	}, {
-		query0: 111,
-		query1: '测试'
+		params: {
+			bookName: 'HTDP'
+		},
+		query: {
+			query0: 111,
+			query1: '测试'
+		}
 	});
 
-	t.is(resp.body, JSON.stringify({
+	t.deepEqual(resp.body, {
 		info: null,
 		message: 'delete'
-	}));
+	});
 });
 
 test('delete with params', async t => {
@@ -292,13 +328,15 @@ test('delete with params', async t => {
 	});
 
 	let resp = await apis.removeBook({
-		bookName: 'HTDP'
+		params: {
+			bookName: 'HTDP'
+		}
 	});
 
-	t.is(resp.body, JSON.stringify({
+	t.deepEqual(resp.body, {
 		info: null,
 		message: 'delete'
-	}));
+	});
 });
 
 test('options with params and query', async t => {
@@ -307,16 +345,19 @@ test('options with params and query', async t => {
 	});
 
 	let resp = await apis.optionsBook({
-		bookName: 'CSAPP'
-	}, {
-		query0: 111,
-		query1: '测试'
+		params: {
+			bookName: 'CSAPP'
+		},
+		query: {
+			query0: 111,
+			query1: '测试'
+		}
 	});
 
-	t.is(resp.body, JSON.stringify({
+	t.deepEqual(resp.body, {
 		info: null,
 		message: 'options'
-	}));
+	});
 });
 
 test('get with raw options', async t => {
@@ -357,6 +398,7 @@ test('post with raw options', async t => {
 		info: {
 			bookName: 'CSAPP'
 		},
+		version: 1,
 		message: 'post'
 	});
 });
@@ -367,12 +409,17 @@ test('put with buffer, params, query and type', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.updateBook(buf, {
-		bookName: 'buf'
-	}, {
-		key0: '000',
-		key1: 111
-	}, 'json');
+	let resp = await apis.updateBook({
+		body: buf,
+		params: {
+			bookName: 'buf'
+		},
+		query: {
+			key0: '000',
+			key1: 111
+		},
+		type: 'json'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
@@ -388,9 +435,14 @@ test('put with buffer, params, query typed string and type', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.updateBook(buf, {
-		bookName: 'buf'
-	}, 'key0=000&key1=111', 'json');
+	let resp = await apis.updateBook({
+		body: buf,
+		params: {
+			bookName: 'buf'
+		},
+		query: 'key0=000&key1=111',
+		type: 'json'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
@@ -406,11 +458,15 @@ test('put with buffer, params, query', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.updateBook(buf, {
-		bookName: 'buf'
-	}, {
-		key0: '000',
-		key1: 111
+	let resp = await apis.updateBook({
+		body: buf,
+		params: {
+			bookName: 'buf'
+		},
+		query: {
+			key0: '000',
+			key1: 111
+		}
 	});
 
 	t.is(resp.body, JSON.stringify({
@@ -427,9 +483,13 @@ test('put with buffer, params, query typed string', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.updateBook(buf, {
-		bookName: 'buf'
-	}, 'key0=000&key1=111');
+	let resp = await apis.updateBook({
+		body: buf,
+		params: {
+			bookName: 'buf'
+		},
+		query: 'key0=000&key1=111'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
@@ -445,8 +505,11 @@ test('put with buffer, params', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.updateBook(buf, {
-		bookName: 'buf'
+	let resp = await apis.updateBook({
+		body: buf,
+		params: {
+			bookName: 'buf'
+		}
 	});
 
 	t.is(resp.body, JSON.stringify({
@@ -463,15 +526,20 @@ test('post with buffer, query and type', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.addBook(buf, {
-		key0: '000',
-		key1: 111
-	}, 'json');
+	let resp = await apis.addBook({
+		body: buf,
+		query: {
+			key0: '000',
+			key1: 111
+		},
+		type: 'json'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
 			bookName: 'buffer'
 		},
+		version: 1,
 		message: 'post'
 	}));
 });
@@ -482,12 +550,17 @@ test('post with buffer, query typed string and type', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.addBook(buf, 'key0=000&key1=111', 'json');
+	let resp = await apis.addBook({
+		body: buf,
+		query: 'key0=000&key1=111',
+		type: 'json'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
 			bookName: 'buffer'
 		},
+		version: 1,
 		message: 'post'
 	}));
 });
@@ -498,12 +571,16 @@ test('post with buffer and type', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.addBook(buf, 'json');
+	let resp = await apis.addBook({
+		body: buf,
+		type: 'json'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
 			bookName: 'buffer'
 		},
+		version: 1,
 		message: 'post'
 	}));
 });
@@ -514,15 +591,19 @@ test('post with buffer and query', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.addBook(buf, {
-		key0: '000',
-		key1: 111
+	let resp = await apis.addBook({
+		body: buf,
+		query: {
+			key0: '000',
+			key1: 111
+		}
 	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
 			bookName: 'buffer'
 		},
+		version: 1,
 		message: 'post'
 	}));
 });
@@ -533,12 +614,16 @@ test('post with buffer and query typed string', async t => {
 	});
 
 	const buf = Buffer.from(JSON.stringify({ bookName: 'buffer' }), 'utf8');
-	let resp = await apis.addBook(buf, 'key0=000&key1=111');
+	let resp = await apis.addBook({
+		body: buf,
+		query: 'key0=000&key1=111'
+	});
 
 	t.is(resp.body, JSON.stringify({
 		info: {
 			bookName: 'buffer'
 		},
+		version: 1,
 		message: 'post'
 	}));
 });

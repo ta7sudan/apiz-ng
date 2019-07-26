@@ -10,9 +10,9 @@
 
   const isForm = cType => /application\/x-www-form-urlencoded/i.test(cType);
 
-  const isStr = v => v && typeof v === 'string';
+  const isNoEmptyStr = v => v && typeof v === 'string';
 
-  const isObj = o => Object.prototype.toString.call(o) === '[object Object]';
+  const isStrOrStrListRecord = o => Object.prototype.toString.call(o) === '[object Object]';
 
   const lc = window.location;
   const xhrPool = [],
@@ -39,6 +39,11 @@
     const xhr = new XMLHttpRequest();
     Object.defineProperty(xhr, '_active', {
       value: false,
+      writable: true,
+      enumerable: false
+    });
+    Object.defineProperty(xhr, 'requestURL', {
+      value: '',
       writable: true,
       enumerable: false
     });
@@ -71,8 +76,11 @@
   }
 
   function querystring(obj) {
-    if (isObj(obj)) {
-      return Object.keys(obj).map(k => Array.isArray(obj[k]) ? obj[k].map(v => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`).join('&');
+    if (isStrOrStrListRecord(obj)) {
+      return Object.keys(obj).map(k => {
+        const value = obj[k];
+        return Array.isArray(value) ? value.map(v => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : `${encodeURIComponent(k)}=${encodeURIComponent(value)}`;
+      }).join('&');
     } else {
       return JSON.stringify(obj);
     }
@@ -81,6 +89,7 @@
   const defaultSerialize = ({
     data,
     method,
+    processData,
     contentType = MIME.json,
     url,
     cache
@@ -92,6 +101,11 @@
     }
 
     if (method === 'GET' || method === 'HEAD') {
+      if (processData) {
+        // tslint:disable-next-line
+        url += ~url.indexOf('?') ? `&${querystring(data)}` : `?${querystring(data)}`;
+      }
+
       return {
         url,
         data
@@ -131,7 +145,7 @@
   }) => {
     let rst = null;
 
-    if (isStr(data) && (isStr(contentType) && isJSON(contentType) || isJSON(acceptType))) {
+    if (isNoEmptyStr(data) && (isNoEmptyStr(contentType) && isJSON(contentType) || isJSON(acceptType))) {
       try {
         rst = JSON.parse(data);
       } catch (e) {
@@ -146,13 +160,11 @@
   };
 
   function setHeaders(xhr, headers) {
-    if (isObj(headers)) {
-      Object.keys(headers).forEach(k => xhr.setRequestHeader(k, headers[k]));
-    }
+    Object.keys(headers).forEach(k => xhr.setRequestHeader(k, headers[k]));
   }
 
   function setEvents(target, evts) {
-    if (isObj(evts) && target) {
+    if (isStrOrStrListRecord(evts) && target) {
       // 不用addEventListener是它不方便reset
       Object.keys(evts).filter(k => events.indexOf(k) !== -1).forEach(k => target[k] = evts[k]);
     }
@@ -175,10 +187,12 @@
       dataType: acceptType = 'json',
 
       /* tslint:disable */
+      processData = true,
       data: reqRawData,
       beforeSend,
       complete,
-      error,
+      recoverableError,
+      unrecoverableError,
       headers,
       mimeType,
       responseType = '',
@@ -205,7 +219,7 @@
     // 准备数据
 
 
-    if (isStr(reqCtype)) {
+    if (isNoEmptyStr(reqCtype)) {
       MIME[reqCtype] && (reqCtype = MIME[reqCtype]);
     } else if (reqCtype) {
       throw new TypeError('contentType could be "json", "form", "html", "xml", "text" or other custom string.');
@@ -218,7 +232,8 @@
           protocol = maybeProtocol ? maybeProtocol[1] : hrefProtocol ? hrefProtocol[1] : null,
           xhr = xhrFactory(),
           hasCompleteCb = isFn(complete),
-          hasErrorCb = isFn(error),
+          hasRecoverableErrorCb = isFn(recoverableError),
+          hasUnrecoverableErrorCb = isFn(unrecoverableError),
           hasSuccessCb = isFn(success);
     let reqData,
         errCalled = false,
@@ -230,6 +245,7 @@
     } = slz({
       data: reqRawData,
       method,
+      processData,
       contentType: reqCtype,
       url,
       cache
@@ -241,19 +257,22 @@
 
     if (reqCtype) {
       xhr.setRequestHeader('Content-Type', reqCtype);
-    } else if (isStr(reqData)) {
+    } else if (isNoEmptyStr(reqData)) {
       // 不在默认参数设json是为了让FormData之类的能够由浏览器自己设置
       // 这里只对字符串的body设置默认为json
       xhr.setRequestHeader('Content-Type', MIME.json);
     }
 
-    if (isStr(acceptType)) {
+    if (isNoEmptyStr(acceptType)) {
       MIME[acceptType] && (acceptType = MIME[acceptType]);
       xhr.setRequestHeader('Accept', acceptType);
     }
 
-    setHeaders(xhr, headers);
-    isStr(mimeType) && xhr.overrideMimeType(mimeType); // 主要是给progress等事件用, 但存在破坏封装的风险
+    if (isStrOrStrListRecord(headers)) {
+      setHeaders(xhr, headers);
+    }
+
+    isNoEmptyStr(mimeType) && xhr.overrideMimeType(mimeType); // 主要是给progress等事件用, 但存在破坏封装的风险
 
     setEvents(xhr, events);
     setEvents(xhr.upload, uploadEvents);
@@ -308,7 +327,7 @@
           hasCompleteCb && complete(this, 'success');
         } else if (this.status !== 0) {
           // 这类错误xhr.onerror和window.onerror都不捕获所以手动抛一个
-          if (!hasErrorCb && !hasCompleteCb) {
+          if (!hasRecoverableErrorCb && !hasCompleteCb) {
             throw new Error(`Remote server error. Request URL: ${this.requestURL}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`);
           } // 理论上来讲好像没必要再注册xhr.onerror了, 因为如果有error那status必然为0
           // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/status
@@ -317,9 +336,9 @@
           // 但是我要加!!!
 
 
-          if (hasErrorCb) {
+          if (hasRecoverableErrorCb) {
             errCalled = true;
-            error(new Error(`Remote server error. Request URL: ${this.requestURL}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`), resData, this, e);
+            recoverableError(new Error(`Remote server error. Request URL: ${this.requestURL}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`), resData, this, e);
           }
 
           if (hasCompleteCb) {
@@ -333,12 +352,12 @@
 
     xhr.onerror = function (e) {
       // 跨域错误会在这里捕获, 但是window.onerror不捕获, 所以也手动抛一个
-      if (!hasErrorCb && !hasCompleteCb) {
+      if (!hasUnrecoverableErrorCb && !hasCompleteCb) {
         throw new Error(`An error occurred, maybe crossorigin error. Request URL: ${this.requestURL}, Status code: ${this.status}.`);
       }
 
-      if (!errCalled && hasErrorCb) {
-        error(new Error(`Network error or browser restricted. Request URL: ${this.requestURL}, Status code: ${this.status}`), undefined, this, e);
+      if (!errCalled && hasUnrecoverableErrorCb) {
+        unrecoverableError(new Error(`Network error or browser restricted. Request URL: ${this.requestURL}, Status code: ${this.status}`), this, e);
       }
 
       if (!completeCalled && hasCompleteCb) {
@@ -378,77 +397,146 @@
     };
   }
 
-  /* global false */
+  function _extends() {
+    _extends = Object.assign || function (target) {
+      for (var i = 1; i < arguments.length; i++) {
+        var source = arguments[i];
 
-  const retryMap = {},
-        isFn$1 = f => typeof f === 'function';
-
-  let reqId = Date.now();
-
-  function request(opts) {
-    // tslint:disable-next-line
-    let {
-      url,
-      method,
-      type,
-      data,
-      beforeSend,
-      afterResponse,
-      complete,
-      retry = 0,
-      options = {},
-      id = ++reqId
-    } = opts,
-        reqData;
-    retryMap[id] = -~retryMap[id];
-    opts.id = id;
-
-    if (data) {
-      reqData = options.data = data;
-      options.contentType = type;
-    }
-
-    options.url = url;
-    options.method = method;
-    return new Promise((rs, rj) => {
-      ajax(Object.assign({
-        beforeSend,
-
-        // $防止遮蔽
-        success($data, xhr) {
-          delete retryMap[id]; // 算了, 这个异常还是让它直接crash掉吧, 和后面保持一致
-
-          isFn$1(afterResponse) && afterResponse($data, 'success', xhr, url, reqData);
-          rs({
-            data: $data,
-
-            next() {
-              isFn$1(complete) && complete($data, xhr, url, reqData);
-            }
-
-          });
-        },
-
-        // $防止遮蔽
-        error(err, $data, xhr) {
-          if (retryMap[id] < retry + 1) {
-            rs(request(opts));
-          } else {
-            delete retryMap[id];
-            isFn$1(afterResponse) && afterResponse($data, 'error', xhr, url, reqData);
-            rj({
-              err,
-
-              next() {
-                isFn$1(complete) && complete(undefined, xhr, url, reqData);
-              }
-
-            });
+        for (var key in source) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            target[key] = source[key];
           }
         }
+      }
 
-      }, options));
-    });
+      return target;
+    };
+
+    return _extends.apply(this, arguments);
+  }
+
+  const isFn$1 = f => typeof f === 'function';
+
+  function isPromise(p) {
+    return !!(p && typeof p.then === 'function');
+  }
+
+  async function pRetry(fn, {
+    retry,
+    beforeRetry
+  }, alreadyTried = 1) {
+    let rst = null;
+
+    if (retry < 0 || retry > Number.MAX_SAFE_INTEGER && retry !== Infinity) {
+      throw new Error('retry must be between 0 to Number.MAX_SAFE_INTEGER or be Infinity');
+    }
+
+    try {
+      rst = fn.call(this);
+
+      if (isPromise(rst)) {
+        rst = await rst;
+      }
+    } catch (e) {
+      if (beforeRetry) {
+        beforeRetry(alreadyTried, e);
+      }
+
+      if (retry) {
+        return pRetry(fn, {
+          // tslint:disable-next-line
+          retry: --retry,
+          beforeRetry
+        }, // tslint:disable-next-line
+        ++alreadyTried);
+      } else {
+        throw e;
+      }
+    }
+
+    return rst;
+  }
+
+  function createRequest({
+    method,
+    beforeSend,
+    afterResponse,
+    error,
+    retry = 0
+  }) {
+    return function request({
+      url,
+      options,
+      body,
+      headers,
+      type,
+      handleError = true
+    }) {
+      let $options,
+          count = 0;
+
+      if (options) {
+        $options = _extends({}, options, {
+          url,
+          method
+        });
+      } else {
+        $options = {
+          url,
+          method,
+          processData: false,
+          data: body,
+          contentType: type,
+          headers
+        };
+      }
+
+      return pRetry(() => {
+        // tslint:disable-next-line
+        return new Promise((rs, rj) => {
+          ajax(_extends({}, $options, {
+            beforeSend(xhr) {
+              if (!count && isFn$1(beforeSend)) {
+                return beforeSend(xhr);
+              }
+            },
+
+            success(data, xhr) {
+              isFn$1(afterResponse) && count === retry && afterResponse(data, 'success', xhr, url, body);
+              rs({
+                data,
+                xhr
+              });
+            },
+
+            recoverableError(err, data, xhr) {
+              isFn$1(afterResponse) && count === retry && afterResponse(data, 'error', xhr, url, body);
+              isFn$1(error) && count === retry && handleError && error('recoverableError', err, data, xhr);
+              rj({
+                err,
+                data
+              });
+            },
+
+            unrecoverableError(err, xhr) {
+              isFn$1(error) && count === retry && handleError && error('unrecoverableError', err, undefined, xhr);
+              rj({
+                err,
+                data: undefined
+              });
+            }
+
+          }));
+        });
+      }, {
+        retry,
+
+        beforeRetry() {
+          ++count;
+        }
+
+      });
+    };
   }
   /**
    * { beforeSend, afterResponse, retry }
@@ -456,40 +544,18 @@
 
 
   function index (opts = {}) {
-    return Object.assign({}, ['get', 'head'].reduce((prev, cur) => (prev[cur] = ({
-      name,
-      meta,
-      url,
-      options
-    }) => request(Object.assign({}, opts, {
-      url,
-      method: cur.toUpperCase(),
-      options
-    })), prev), {}), ['post', 'put', 'patch', 'delete', 'options'].reduce((prev, cur) => (prev[cur] = ({
-      name,
-      meta,
-      url,
-      body,
-      options,
-      type
-    }) => request(Object.assign({}, opts, {
-      url,
-      type,
-      options,
-      method: cur.toUpperCase(),
-      data: body
-    })), prev), {}));
+    return ['get', 'head', 'post', 'put', 'patch', 'delete', 'options'].reduce((prev, cur) => (prev[cur] = createRequest(_extends({}, opts, {
+      method: cur.toUpperCase()
+    })), prev), {});
   }
 
   var meta = {
     _baseURL: 'http://127.0.0.1:8080',
     getBook: {
-      path: '/book/:bookName',
-      pathParams: true
+      path: '/book/:bookName'
     },
     queryBook: {
       path: '/book/:bookName',
-      pathParams: true,
       method: 'head'
     },
     addBook: {
@@ -500,25 +566,21 @@
     updateBook: {
       path: '/book/:bookName',
       method: 'put',
-      pathParams: true,
       type: 'json'
     },
     modifyBook: {
       path: '/book/:bookName',
       method: 'patch',
-      pathParams: true,
       type: 'json'
     },
     removeBook: {
       path: '/book/:bookName',
       method: 'delete',
-      pathParams: true,
       type: 'json'
     },
     optionsBook: {
       path: '/book/:bookName',
       method: 'options',
-      pathParams: true,
       type: 'json'
     }
   };
