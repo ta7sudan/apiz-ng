@@ -1,5 +1,5 @@
 import test from 'ava';
-import pock from 'pock/src/server';
+import pock from 'pock/dist/src/server';
 import { resolve } from 'path';
 import { safeLoad } from 'js-yaml';
 import { readFileSync } from 'fs';
