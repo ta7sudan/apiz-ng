@@ -34,6 +34,10 @@
       globalSerialize = null,
       globalDeserialize = null;
 
+  {
+    var xhrId = 0;
+  }
+
   function createXhr() {
     // 不用class继承, 省得编译出来多一个函数
     const xhr = new XMLHttpRequest();
@@ -47,6 +51,14 @@
       writable: true,
       enumerable: false
     });
+
+    {
+      Object.defineProperty(xhr, '_id', {
+        value: ++xhrId,
+        writable: true,
+        enumerable: false
+      });
+    }
 
     return xhr;
   }
@@ -328,7 +340,7 @@
         } else if (this.status !== 0) {
           // 这类错误xhr.onerror和window.onerror都不捕获所以手动抛一个
           if (!hasRecoverableErrorCb && !hasCompleteCb) {
-            throw new Error(`Remote server error. Request URL: ${this.requestURL}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`);
+            throw new Error(`Remote server error. Request URL: ${this.requestURL}, Method: ${method}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`);
           } // 理论上来讲好像没必要再注册xhr.onerror了, 因为如果有error那status必然为0
           // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/status
           // 但是不加个心里不踏实...总感觉会不会有浏览器没按规范实现
@@ -338,7 +350,7 @@
 
           if (hasRecoverableErrorCb) {
             errCalled = true;
-            recoverableError(new Error(`Remote server error. Request URL: ${this.requestURL}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`), resData, this, e);
+            recoverableError(new Error(`Remote server error. Request URL: ${this.requestURL}, Method: ${method}, Status code: ${this.status}, message: ${this.statusText}, response: ${this.responseText}.`), resData, this, e);
           }
 
           if (hasCompleteCb) {
@@ -353,11 +365,11 @@
     xhr.onerror = function (e) {
       // 跨域错误会在这里捕获, 但是window.onerror不捕获, 所以也手动抛一个
       if (!hasUnrecoverableErrorCb && !hasCompleteCb) {
-        throw new Error(`An error occurred, maybe crossorigin error. Request URL: ${this.requestURL}, Status code: ${this.status}.`);
+        throw new Error(`An error occurred, maybe crossorigin error. Request URL: ${this.requestURL}, Method: ${method}, Status code: ${this.status}.`);
       }
 
       if (!errCalled && hasUnrecoverableErrorCb) {
-        unrecoverableError(new Error(`Network error or browser restricted. Request URL: ${this.requestURL}, Status code: ${this.status}`), this, e);
+        unrecoverableError(new Error(`Network error or browser restricted. Request URL: ${this.requestURL}, Method: ${method}, Status code: ${this.status}`), this, e);
       }
 
       if (!completeCalled && hasCompleteCb) {
@@ -464,7 +476,7 @@
     error,
     retry = 0
   }) {
-    return function request({
+    return async function request({
       url,
       options,
       body,
@@ -472,8 +484,7 @@
       type,
       handleError = true
     }) {
-      let $options,
-          count = 0;
+      let $options;
 
       if (options) {
         $options = _extends({}, options, {
@@ -491,18 +502,21 @@
         };
       }
 
-      return pRetry(() => {
-        // tslint:disable-next-line
-        return new Promise((rs, rj) => {
-          ajax(_extends({}, $options, {
-            beforeSend(xhr) {
-              if (!count && isFn$1(beforeSend)) {
-                return beforeSend(xhr);
-              }
-            },
+      if (isFn$1(beforeSend)) {
+        const rst = await beforeSend($options);
 
+        if (rst === false) {
+          throw new Error('apiz: cancel');
+        }
+      }
+
+      let result, e;
+
+      try {
+        // tslint:disable-next-line
+        result = await pRetry(() => new Promise((rs, rj) => {
+          ajax(_extends({}, $options, {
             success(data, xhr) {
-              isFn$1(afterResponse) && count === retry && afterResponse(data, 'success', xhr, url, body);
               rs({
                 data,
                 xhr
@@ -510,32 +524,55 @@
             },
 
             recoverableError(err, data, xhr) {
-              isFn$1(afterResponse) && count === retry && afterResponse(data, 'error', xhr, url, body);
-              isFn$1(error) && count === retry && handleError && error('recoverableError', err, data, xhr);
               rj({
-                err,
-                data
+                status: 'recoverableError',
+                data,
+                xhr,
+                err
               });
             },
 
             unrecoverableError(err, xhr) {
-              isFn$1(error) && count === retry && handleError && error('unrecoverableError', err, undefined, xhr);
               rj({
-                err,
-                data: undefined
+                status: 'unrecoverableError',
+                data: undefined,
+                xhr,
+                err
               });
             }
 
           }));
+        }), {
+          retry
         });
-      }, {
-        retry,
+      } catch ($err) {
+        e = $err;
+      }
 
-        beforeRetry() {
-          ++count;
+      const resData = result && result.data || e && e.data,
+            status = result && !e ? 'success' : 'error',
+            $xhr = result && result.xhr || e && e.xhr;
+
+      if ((result || e && e.status === 'recoverableError') && isFn$1(afterResponse)) {
+        await afterResponse(resData, status, $xhr, url, body);
+      }
+
+      if (e) {
+        let recoverable = false;
+
+        if (isFn$1(error) && handleError) {
+          recoverable = await error(e.status, e.err, e.data, e.xhr);
+        } // 返回false, 不可恢复
+
+
+        if (recoverable === false || recoverable === undefined) {
+          throw e; // 有非undefined的返回值, 可以恢复, 返回值作为结果
+        } else {
+          return recoverable;
         }
-
-      });
+      } else {
+        return result;
+      }
     };
   }
   /**
