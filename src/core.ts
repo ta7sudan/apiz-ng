@@ -135,26 +135,17 @@ export interface APIzRequestOptions<ContentType> {
 	handleError?: boolean;
 }
 
-export type RequestWithoutThis<RawRequestOptions, ContentType> = () => Promise<any>
-	| ((
-		options: APIzRequestOptions<ContentType>
-	) => Promise<any>)
-	| ((
-		options: RawRequestOptions,
-		isRawOption: boolean
-	) => Promise<any>);
+export type RequestWithoutThis<RawRequestOptions, ContentType> = (
+	options?: APIzRequestOptions<ContentType> | RawRequestOptions,
+	isRawOption?: boolean
+) => Promise<any>;
 
 type Request<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase> = 
-	(this: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>) => Promise<any>
-	| ((
-			this: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>,
-			options: APIzRequestOptions<ContentType>
-	) => Promise<any>)
-	| ((
-			this: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>,
-			options: RawRequestOptions,
-			isRawOption: boolean
-	) => Promise<any>);
+	((
+		this: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>,
+		options?: APIzRequestOptions<ContentType> | RawRequestOptions,
+		isRawOption?: boolean
+) => Promise<any>);
 
 export interface APIzRequest<RawRequestOptions, ContentType, Meta> {
 	(options: APIzRequestOptions<ContentType> | RawRequestOptions, isRawOption?: boolean): Promise<
