@@ -67,7 +67,7 @@ export interface APIzRequestOptions<ContentType> {
     type?: ContentType;
     handleError?: boolean;
 }
-export declare type RequestWithoutThis<RawRequestOptions, ContentType> = (options: APIzRequestOptions<ContentType> | RawRequestOptions, isRawOption?: boolean) => Promise<any>;
+export declare type RequestWithoutThis<RawRequestOptions, ContentType> = () => Promise<any> | ((options: APIzRequestOptions<ContentType>) => Promise<any>) | ((options: RawRequestOptions, isRawOption: boolean) => Promise<any>);
 export interface APIzRequest<RawRequestOptions, ContentType, Meta> {
     (options: APIzRequestOptions<ContentType> | RawRequestOptions, isRawOption?: boolean): Promise<any>;
     readonly url: string;

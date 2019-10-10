@@ -111,7 +111,7 @@
     "rollup-plugin-typescript2": "^0.19.2",
     "tslint": "^5.12.1",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.5.3"
+    "typescript": "^3.6.4"
   },
   "dependencies": {
     "tslib": "^1.9.3"

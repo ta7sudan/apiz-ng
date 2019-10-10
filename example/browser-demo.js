@@ -45,7 +45,7 @@ function str2ab(str) {
 
 (async () => {
 	config({
-		immutableMeta: true
+		immutable: true
 	});
 	const apis = new APIz(meta, {
 		client: apizclient({
@@ -54,17 +54,26 @@ function str2ab(str) {
 			},
 			afterResponse(data, xhr) {
 				console.log('after');
-			}
+			},
+			error(type) {
+				console.log(type);
+				return true;
+			},
+			retry: 2
 		})
 	});
 
 	let resp = await apis.getBook({
-		bookName: 'CSAPP',
-		other: 'test'
-	}, {
+		params: {
+			bookName: 'CSAPP',
+			other: 'test'
+		},
+		query: {
 			version: 2,
 			otherKey: '测试'
-		});
+		},
+		handleError: true
+	});
 	console.log(resp);
 
 
