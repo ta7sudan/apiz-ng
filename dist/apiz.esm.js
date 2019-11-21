@@ -128,9 +128,14 @@ function request(options, isRawOption) {
       handleError,
       options: options
     });
-  }
+  } // GET, HEAD没有body没有content-type, 如果加上了content-type, 会破坏get默认为简单请求的
+  // 行为, 从而导致跨域协商
+  // tslint:disable-next-line
 
-  type === undefined && (type = $defaultType);
+
+  if (type == undefined && methodLowerCase !== 'get' && methodLowerCase !== 'head') {
+    type = $defaultType;
+  }
 
   if (params) {
     url = baseURL + path.replace(regex, replaceParams(params));
