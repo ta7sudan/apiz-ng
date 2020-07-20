@@ -4,24 +4,26 @@ export type HTTPMethodLowerCase = 'get' | 'post' | 'head' | 'put' | 'patch' | 'd
 
 export type HTTPMethod = HTTPMethodUpperCase | HTTPMethodLowerCase;
 
-interface APIInfoWithURL<ContentType, Meta> {
+interface APIInfoWithURL<ContentType, ResponseType, Meta> {
 	url: string;
 	method?: HTTPMethod;
-	type?: ContentType;
+	contentType?: ContentType;
+	responseType?: ResponseType;
 	meta?: Meta;
 }
 
-interface APIInfoWithPath<ContentType, Meta> {
+interface APIInfoWithPath<ContentType, ResponseType, Meta> {
 	baseURL?: string;
 	path: string;
 	method?: HTTPMethod;
-	type?: ContentType;
+	contentType?: ContentType;
+	responseType?: ResponseType;
 	meta?: Meta;
 }
 
-export type APIInfo<ContentType = any, Meta = any> =
-	| APIInfoWithURL<ContentType, Meta>
-	| APIInfoWithPath<ContentType, Meta>;
+export type APIInfo<ContentType = any, ResponseType = any, Meta = any> =
+	| APIInfoWithURL<ContentType, ResponseType, Meta>
+	| APIInfoWithPath<ContentType, ResponseType, Meta>;
 
 export interface APIGroup<
 	T extends Record<string, APIInfo<any, any>> = Record<string, APIInfo<any, any>>
@@ -30,7 +32,7 @@ export interface APIGroup<
 	apis: T;
 }
 
-export interface ClientRequestOptions<RawRequestOptions, ContentType, Meta> {
+export interface ClientRequestOptions<RawRequestOptions, ContentType, ResponseType, Meta> {
 	url: string;
 	name: string;
 	meta?: Meta;
@@ -39,31 +41,34 @@ export interface ClientRequestOptions<RawRequestOptions, ContentType, Meta> {
 	params?: Record<string, string>;
 	query?: string | Record<string, any>;
 	headers?: Record<string, any>;
-	type?: ContentType;
+	contentType?: ContentType;
+	responseType?: ResponseType;
 	handleError?: boolean;
 }
 
-export type APIzClientRequest<RawRequestOptions, ContentType, Meta> = (
-	options: ClientRequestOptions<RawRequestOptions, ContentType, Meta>
+export type APIzClientRequest<RawRequestOptions, ContentType, ResponseType, Meta> = (
+	options: ClientRequestOptions<RawRequestOptions, ContentType, ResponseType, Meta>
 ) => Promise<any>;
 
 export type APIzClient<
 RawRequestOptions,
 ContentType,
+ResponseType,
 Meta,
 Method extends HTTPMethodLowerCase = HTTPMethodLowerCase
-> = {[k in Method]: APIzClientRequest<RawRequestOptions, ContentType, Meta>};
+> = {[k in Method]: APIzClientRequest<RawRequestOptions, ContentType, ResponseType, Meta>};
 
 export type Serialize2QueryString = (obj: any) => string;
 
 export interface APIzOptions<
 	RawRequestOptions,
 	ContentType,
+	ResponseType,
 	Meta,
 	Method extends HTTPMethodLowerCase = HTTPMethodLowerCase
 > {
 	baseURL?: string;
-	client?: APIzClient<RawRequestOptions, ContentType, Meta, Method>;
+	client?: APIzClient<RawRequestOptions, ContentType, ResponseType, Meta, Method>;
 	immutable?: boolean;
 	paramRegex?: RegExp;
 	querystring?: Serialize2QueryString;
@@ -72,12 +77,14 @@ export interface APIzOptions<
 export interface GlobalAPIzOptions<
 	RawRequestOptions,
 	ContentType,
+	ResponseType,
 	Meta,
 	Method extends HTTPMethodLowerCase = HTTPMethodLowerCase
 > {
-	client?: APIzClient<RawRequestOptions, ContentType, Meta, Method>;
+	client?: APIzClient<RawRequestOptions, ContentType, ResponseType, Meta, Method>;
 	paramRegex?: RegExp;
-	defaultType?: ContentType;
+	defaultContentType?: ContentType;
+	defaultResponseType?: ResponseType;
 	immutable?: boolean;
 	reset?: boolean;
 	querystring?: (obj: any) => string;
@@ -85,7 +92,7 @@ export interface GlobalAPIzOptions<
 
 type Callable = (...args: Array<any>) => any;
 
-interface ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase> {
+interface ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method extends HTTPMethodLowerCase> {
 	url: string;
 	baseURL: string;
 	path: string;
@@ -93,11 +100,12 @@ interface ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method extends HTT
 	meta?: Meta;
 	method: HTTPMethodUpperCase;
 	methodLowerCase: Method;
-	type?: ContentType;
+	contentType?: ContentType;
+	responseType?: ResponseType;
 	regex: RegExp;
 	querystring: Serialize2QueryString;
 	init: boolean;
-	client: APIzClient<RawRequestOptions, ContentType, Meta, Method>;
+	client: APIzClient<RawRequestOptions, ContentType, ResponseType, Meta, Method>;
 }
 
 type ContentTypeFrom<R> = R extends Record<string, APIInfo<infer C, infer M>>
@@ -106,8 +114,14 @@ type ContentTypeFrom<R> = R extends Record<string, APIInfo<infer C, infer M>>
 		: C
 	: never;
 
+type ResponseTypeFrom<R> = R extends Record<string, APIInfo<infer C, infer M>>
+	? M extends unknown
+	? any
+	: M
+	: never;
+
 type ProxyGroup<RawRequestOptions, T extends Record<string, APIInfo<any, any>>> = {
-	[k in keyof T]: RequestWithoutThis<RawRequestOptions, ContentTypeFrom<T>>
+	[k in keyof T]: RequestWithoutThis<RawRequestOptions, ContentTypeFrom<T>, ResponseTypeFrom<T>>
 };
 
 export type APIzInstance<
@@ -126,35 +140,37 @@ Method extends HTTPMethodLowerCase = HTTPMethodLowerCase
 	) => APIzInstance<RawRequestOptions, T, Method>;
 };
 
-export interface APIzRequestOptions<ContentType> {
+export interface APIzRequestOptions<ContentType, ResponseType> {
 	body?: any;
 	params?: Record<string, string>;
 	query?: string | Record<string, any>;
 	headers?: Record<string, any>;
-	type?: ContentType;
+	contentType?: ContentType;
+	responseType?: ResponseType;
 	handleError?: boolean;
 }
 
-export type RequestWithoutThis<RawRequestOptions, ContentType> = (
-	options?: APIzRequestOptions<ContentType> | RawRequestOptions,
+export type RequestWithoutThis<RawRequestOptions, ContentType, ResponseType> = (
+	options?: APIzRequestOptions<ContentType, ResponseType> | RawRequestOptions,
 	isRawOption?: boolean
 ) => Promise<any>;
 
-type Request<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase> = 
+type Request<RawRequestOptions, ContentType, ResponseType, Meta, Method extends HTTPMethodLowerCase> = 
 	((
-		this: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>,
-		options?: APIzRequestOptions<ContentType> | RawRequestOptions,
+		this: ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>,
+		options?: APIzRequestOptions<ContentType, ResponseType> | RawRequestOptions,
 		isRawOption?: boolean
 ) => Promise<any>);
 
-export interface APIzRequest<RawRequestOptions, ContentType, Meta> {
-	(options: APIzRequestOptions<ContentType> | RawRequestOptions, isRawOption?: boolean): Promise<
+export interface APIzRequest<RawRequestOptions, ContentType, ResponseType, Meta> {
+	(options: APIzRequestOptions<ContentType, ResponseType> | RawRequestOptions, isRawOption?: boolean): Promise<
 		any
 	>;
 	readonly url: string;
 	readonly method: HTTPMethodUpperCase;
 	readonly meta: Meta;
-	readonly type: ContentType;
+	readonly contentType: ContentType;
+	readonly responseType: ResponseType;
 }
 
 const toString = ((Map as unknown) as () => any).call.bind(Object.prototype.toString);
@@ -168,20 +184,21 @@ const isEnumerable = ((Map as unknown) as () => any).call.bind(
 let globalQuerystring: Serialize2QueryString | undefined,
 	globalParamRegex: RegExp | undefined,
 	globalIsArgsImmutable: boolean | undefined = false,
-	globalClient: APIzClient<any, any, any, any> | undefined,
-	defaultType: any;
+	globalClient: APIzClient<any, any, any, any, any> | undefined,
+	defaultContentType: any,
+	defaultResponseType: any;
 
 const defaultParamRegex = /:((\w|-)+)/g,
 	slashRegex = /\/\//g,
 	replaceSlash = (m: string, o: number): string => (o <= 6 ? m : '/');
 
-function isAPIInfoWithURL<ContentType, Meta>(v: any): v is APIInfoWithURL<ContentType, Meta> {
+function isAPIInfoWithURL<ContentType, ResponseType, Meta>(v: any): v is APIInfoWithURL<ContentType, ResponseType, Meta> {
 	return !!v.url;
 }
 
-function parseApiInfo<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase>(
+function parseApiInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method extends HTTPMethodLowerCase>(
 	name: string,
-	rawInfo: APIInfo<ContentType, Meta>,
+	rawInfo: APIInfo<ContentType, ResponseType, Meta>,
 	{
 		baseURL: gBaseURL,
 		paramRegex,
@@ -191,12 +208,13 @@ function parseApiInfo<RawRequestOptions, ContentType, Meta, Method extends HTTPM
 	baseURL?: string;
 	paramRegex: RegExp;
 	querystring: Serialize2QueryString;
-	client: APIzClient<RawRequestOptions, ContentType, Meta, Method>;
+	client: APIzClient<RawRequestOptions, ContentType, ResponseType, Meta, Method>;
 	}
-): ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method> {
+): ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method> {
 	const {
 		method = 'GET' as HTTPMethod,
-		type = defaultType as ContentType | undefined,
+		contentType = defaultContentType as ContentType | undefined,
+		responseType = defaultResponseType as ResponseType | undefined,
 		meta
 	} = rawInfo;
 	let url: string | undefined, baseURL: string | undefined, path: string | undefined;
@@ -206,14 +224,14 @@ function parseApiInfo<RawRequestOptions, ContentType, Meta, Method extends HTTPM
 		throw new Error('"remove" and "add" is preserved key.');
 	}
 
-	if (isAPIInfoWithURL<ContentType, Meta>(rawInfo)) {
+	if (isAPIInfoWithURL<ContentType, ResponseType, Meta>(rawInfo)) {
 		url = rawInfo.url;
 	} else {
 		baseURL = rawInfo.baseURL;
 		path = rawInfo.path;
 	}
 
-	const info = {} as ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>,
+	const info = {} as ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>,
 		bURL = baseURL || gBaseURL;
 
 	if (!isObj(rawInfo)) {
@@ -243,7 +261,8 @@ function parseApiInfo<RawRequestOptions, ContentType, Meta, Method extends HTTPM
 	info.method = methodUpperCase;
 	info.methodLowerCase = methodLowerCase;
 	info.client = client;
-	info.type = type;
+	info.contentType = contentType;
+	info.responseType = responseType;
 	info.regex = paramRegex;
 	info.querystring = querystring;
 	info.init = true;
@@ -259,15 +278,16 @@ function replaceParams(params: Record<string, string>): (m: string, v: string) =
 	};
 }
 
-function request<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase>(
-	this: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>,
-	options?: APIzRequestOptions<ContentType> | RawRequestOptions,
+function request<RawRequestOptions, ContentType, ResponseType, Meta, Method extends HTTPMethodLowerCase>(
+	this: ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>,
+	options?: APIzRequestOptions<ContentType, ResponseType> | RawRequestOptions,
 	isRawOption?: boolean
 ): Promise<any> {
 	// $以区分全局变量
 	const {
 		methodLowerCase,
-		type: $defaultType,
+		contentType: $defaultContentType,
+		responseType: $defaultResponseType,
 		regex,
 		querystring,
 		baseURL,
@@ -277,7 +297,7 @@ function request<RawRequestOptions, ContentType, Meta, Method extends HTTPMethod
 	} = this;
 	let qs,
 		// tslint:disable-next-line
-		{query, params, body, headers, type, handleError} = (options as APIzRequestOptions<ContentType> | undefined) || {} as APIzRequestOptions<ContentType>,
+		{query, params, body, headers, contentType, responseType, handleError} = (options as APIzRequestOptions<ContentType, ResponseType> | undefined) || {} as APIzRequestOptions<ContentType, ResponseType>,
 		url = this.url;
 
 	if (isRawOption === true) {
@@ -292,8 +312,13 @@ function request<RawRequestOptions, ContentType, Meta, Method extends HTTPMethod
 	// GET, HEAD没有body没有content-type, 如果加上了content-type, 会破坏get默认为简单请求的
 	// 行为, 从而导致跨域协商
 	// tslint:disable-next-line
-	if (type == undefined && methodLowerCase !== 'get' && methodLowerCase !== 'head') {
-		type = $defaultType;
+	if (contentType == undefined && methodLowerCase !== 'get' && methodLowerCase !== 'head') {
+		contentType = $defaultContentType;
+	}
+	
+	// tslint:disable-next-line
+	if (responseType == undefined) {
+		responseType = $defaultResponseType;
 	}
 
 	if (params) {
@@ -310,17 +335,18 @@ function request<RawRequestOptions, ContentType, Meta, Method extends HTTPMethod
 		name: this.name,
 		handleError,
 		meta,
-		type,
+		contentType,
+		responseType,
 		body,
 		headers,
 		query
 	});
 }
 
-function createAPI<RawRequestOptions, ContentType, Meta, Method extends HTTPMethodLowerCase>(
-	info: ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>
-): APIzRequest<RawRequestOptions, ContentType, Meta> {
-	const fn = request.bind<Request<RawRequestOptions, ContentType, Meta, Method>>(info);
+function createAPI<RawRequestOptions, ContentType, ResponseType, Meta, Method extends HTTPMethodLowerCase>(
+	info: ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>
+): APIzRequest<RawRequestOptions, ContentType, ResponseType, Meta> {
+	const fn = request.bind<Request<RawRequestOptions, ContentType, ResponseType, Meta, Method>>(info);
 
 	['url', 'method', 'meta', 'type'].forEach((k: string) => {
 		Object.defineProperty(fn, k, {
@@ -329,27 +355,28 @@ function createAPI<RawRequestOptions, ContentType, Meta, Method extends HTTPMeth
 			writable: false
 		});
 	});
-	return (fn as unknown) as APIzRequest<RawRequestOptions, ContentType, Meta>;
+	return (fn as unknown) as APIzRequest<RawRequestOptions, ContentType, ResponseType, Meta>;
 }
 
 export function APIz<
 RawRequestOptions = any,
 ContentType = any,
+ResponseType = any,
 Meta = any,
 Method extends HTTPMethodLowerCase = HTTPMethodLowerCase,
-T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<ContentType, Meta>>
+T extends Record<string, APIInfo<ContentType, ResponseType, Meta>> = Record<string, APIInfo<ContentType, ResponseType, Meta>>
 >(
 	group: APIGroup<T>,
-	options?: APIzOptions<RawRequestOptions, ContentType, Meta, Method>
+	options?: APIzOptions<RawRequestOptions, ContentType, ResponseType, Meta, Method>
 ): APIzInstance<RawRequestOptions, T, Method> {
 	let baseURL: string | undefined,
 		immutable: boolean | undefined,
 		paramRegex: RegExp,
 		querystring: Serialize2QueryString | undefined,
-		client: APIzClient<RawRequestOptions, ContentType, Meta, Method> | undefined,
+		client: APIzClient<RawRequestOptions, ContentType, ResponseType, Meta, Method> | undefined,
 		apiInfoGroup = {} as Record<
 			string,
-			ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method> | APIInfo<ContentType, Meta>
+			ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method> | APIInfo<ContentType, ResponseType, Meta>
 		>;
 
 	isStr(group.baseURL) && (baseURL = group.baseURL);
@@ -388,7 +415,7 @@ T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<Co
 		for (const key in apis) {
 			// tslint:disable-next-line
 			if (isObj(apis[key])) {
-				apiInfoGroup[key] = parseApiInfo<RawRequestOptions, ContentType, Meta, Method>(
+				apiInfoGroup[key] = parseApiInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>(
 					key,
 					apis[key],
 					groupOptions
@@ -406,9 +433,9 @@ T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<Co
 				if (!apiInfoGroup[key] || !isEnumerable(apiInfoGroup, key)) {
 					return Reflect.get(target, key);
 				} else if (
-					!(apiInfoGroup[key] as ParsedAPIInfo<RawRequestOptions, ContentType, Meta, Method>).init
+					!(apiInfoGroup[key] as ParsedAPIInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>).init
 				) {
-					apiInfoGroup[key] = parseApiInfo<RawRequestOptions, ContentType, Meta, Method>(
+					apiInfoGroup[key] = parseApiInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>(
 						key,
 						apiInfoGroup[key],
 						groupOptions
@@ -417,6 +444,7 @@ T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<Co
 				const apiFn = createAPI(apiInfoGroup[key] as ParsedAPIInfo<
 					RawRequestOptions,
 					ContentType,
+					ResponseType,
 					Meta,
 					Method
 				>);
@@ -438,12 +466,12 @@ T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<Co
 
 	self.add = function (
 		name: string,
-		apiInfo: APIInfo<ContentType, Meta>
+		apiInfo: APIInfo<ContentType, ResponseType, Meta>
 	): APIzInstance<RawRequestOptions, T, Method> {
 		if (apiInfoGroup[name]) {
 			throw new Error(`API "${name}" already exists.`);
 		}
-		apiInfoGroup[name] = parseApiInfo<RawRequestOptions, ContentType, Meta, Method>(
+		apiInfoGroup[name] = parseApiInfo<RawRequestOptions, ContentType, ResponseType, Meta, Method>(
 			name,
 			apiInfo,
 			groupOptions
@@ -452,6 +480,7 @@ T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<Co
 		(this as any)[name] = createAPI(apiInfoGroup[name] as ParsedAPIInfo<
 			RawRequestOptions,
 			ContentType,
+			ResponseType,
 			Meta,
 			Method
 		>);
@@ -464,6 +493,7 @@ T extends Record<string, APIInfo<ContentType, Meta>> = Record<string, APIInfo<Co
 export function config<
 RawRequestOptions,
 ContentType = any,
+ResponseType = any,
 Meta = any,
 Method extends HTTPMethodLowerCase = HTTPMethodLowerCase
 >(
@@ -473,15 +503,17 @@ Method extends HTTPMethodLowerCase = HTTPMethodLowerCase
 		immutable,
 		client,
 		reset,
-		defaultType: dt
-	}: GlobalAPIzOptions<RawRequestOptions, ContentType, Meta, Method> = {reset: true}
+		defaultContentType: dct,
+		defaultResponseType: drt
+	}: GlobalAPIzOptions<RawRequestOptions, ContentType, ResponseType, Meta, Method> = {reset: true}
 ): void {
 	isFn(querystring) && (globalQuerystring = querystring);
 	paramRegex instanceof RegExp && (globalParamRegex = paramRegex);
 	globalIsArgsImmutable = immutable;
 	globalClient = client;
-	defaultType = dt;
+	defaultContentType = dct;
+	defaultResponseType = drt;
 	reset &&
-		((globalQuerystring = globalParamRegex = globalClient = defaultType = undefined),
+		((globalQuerystring = globalParamRegex = globalClient = defaultContentType = defaultResponseType = undefined),
 		(globalIsArgsImmutable = false));
 }

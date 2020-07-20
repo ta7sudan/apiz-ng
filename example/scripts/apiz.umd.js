@@ -17,7 +17,8 @@
 	    globalParamRegex,
 	    globalIsArgsImmutable = false,
 	    globalClient,
-	    defaultType;
+	    defaultContentType,
+	    defaultResponseType;
 
 	const defaultParamRegex = /:((\w|-)+)/g,
 	      slashRegex = /\/\//g,
@@ -35,7 +36,8 @@
 	}) {
 	  const {
 	    method = 'GET',
-	    type = defaultType,
+	    contentType = defaultContentType,
+	    responseType = defaultResponseType,
 	    meta
 	  } = rawInfo;
 	  let url, baseURL, path; // 照理讲放parseApiInfo外面显得更合理一点, 不过考虑到add和实例化的时候都要校验
@@ -86,7 +88,8 @@
 	  info.method = methodUpperCase;
 	  info.methodLowerCase = methodLowerCase;
 	  info.client = client;
-	  info.type = type;
+	  info.contentType = contentType;
+	  info.responseType = responseType;
 	  info.regex = paramRegex;
 	  info.querystring = querystring;
 	  info.init = true;
@@ -107,7 +110,8 @@
 	  // $以区分全局变量
 	  const {
 	    methodLowerCase,
-	    type: $defaultType,
+	    contentType: $defaultContentType,
+	    responseType: $defaultResponseType,
 	    regex,
 	    querystring,
 	    baseURL,
@@ -122,7 +126,8 @@
 	    params,
 	    body,
 	    headers,
-	    type,
+	    contentType,
+	    responseType,
 	    handleError
 	  } = options || {},
 	      url = this.url;
@@ -139,8 +144,13 @@
 	  // tslint:disable-next-line
 
 
-	  if (type == undefined && methodLowerCase !== 'get' && methodLowerCase !== 'head') {
-	    type = $defaultType;
+	  if (contentType == undefined && methodLowerCase !== 'get' && methodLowerCase !== 'head') {
+	    contentType = $defaultContentType;
+	  } // tslint:disable-next-line
+
+
+	  if (responseType == undefined) {
+	    responseType = $defaultResponseType;
 	  }
 
 	  if (params) {
@@ -157,7 +167,8 @@
 	    name: this.name,
 	    handleError,
 	    meta,
-	    type,
+	    contentType,
+	    responseType,
 	    body,
 	    headers,
 	    query
@@ -268,7 +279,8 @@
 	  immutable,
 	  client,
 	  reset,
-	  defaultType: dt
+	  defaultContentType: dct,
+	  defaultResponseType: drt
 	} = {
 	  reset: true
 	}) {
@@ -276,8 +288,9 @@
 	  paramRegex instanceof RegExp && (globalParamRegex = paramRegex);
 	  globalIsArgsImmutable = immutable;
 	  globalClient = client;
-	  defaultType = dt;
-	  reset && (globalQuerystring = globalParamRegex = globalClient = defaultType = undefined, globalIsArgsImmutable = false);
+	  defaultContentType = dct;
+	  defaultResponseType = drt;
+	  reset && (globalQuerystring = globalParamRegex = globalClient = defaultContentType = defaultResponseType = undefined, globalIsArgsImmutable = false);
 	}
 
 	const querystring = function (obj) {
@@ -292,7 +305,8 @@
 
 	config({
 	  querystring,
-	  defaultType: 'json'
+	  defaultContentType: 'json',
+	  defaultResponseType: 'json'
 	});
 
 	exports.APIz = APIz;

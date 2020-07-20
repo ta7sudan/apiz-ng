@@ -3,7 +3,8 @@ import { querystring } from './querystring';
 
 config({
 	querystring,
-	defaultType: 'json'
+	defaultContentType: 'json',
+	defaultResponseType: 'json'
 });
 
 export * from './core';
