@@ -130,6 +130,7 @@ function request(options, isRawOption) {
     return client[methodLowerCase]({
       url,
       name: this.name,
+      method: this.method.toUpperCase(),
       handleError,
       options: options
     });
@@ -159,6 +160,7 @@ function request(options, isRawOption) {
   return client[methodLowerCase]({
     url,
     name: this.name,
+    method: this.method.toUpperCase(),
     handleError,
     meta,
     contentType,

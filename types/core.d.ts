@@ -24,6 +24,7 @@ export interface APIGroup<T extends Record<string, APIInfo<any, any>> = Record<s
 export interface ClientRequestOptions<RawRequestOptions, ContentType, ResponseType, Meta> {
     url: string;
     name: string;
+    method: HTTPMethodUpperCase;
     meta?: Meta;
     options?: RawRequestOptions;
     body?: any;

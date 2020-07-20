@@ -35,6 +35,7 @@ export interface APIGroup<
 export interface ClientRequestOptions<RawRequestOptions, ContentType, ResponseType, Meta> {
 	url: string;
 	name: string;
+	method: HTTPMethodUpperCase;
 	meta?: Meta;
 	options?: RawRequestOptions;
 	body?: any;
@@ -304,6 +305,7 @@ function request<RawRequestOptions, ContentType, ResponseType, Meta, Method exte
 		return client[methodLowerCase]({
 			url,
 			name: this.name,
+			method: this.method.toUpperCase() as HTTPMethodUpperCase,
 			handleError,
 			options: options as RawRequestOptions | undefined
 		});
@@ -333,6 +335,7 @@ function request<RawRequestOptions, ContentType, ResponseType, Meta, Method exte
 	return client[methodLowerCase]({
 		url,
 		name: this.name,
+		method: this.method.toUpperCase() as HTTPMethodUpperCase,
 		handleError,
 		meta,
 		contentType,

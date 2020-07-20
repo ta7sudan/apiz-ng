@@ -136,6 +136,7 @@
 	    return client[methodLowerCase]({
 	      url,
 	      name: this.name,
+	      method: this.method.toUpperCase(),
 	      handleError,
 	      options: options
 	    });
@@ -165,6 +166,7 @@
 	  return client[methodLowerCase]({
 	    url,
 	    name: this.name,
+	    method: this.method.toUpperCase(),
 	    handleError,
 	    meta,
 	    contentType,
