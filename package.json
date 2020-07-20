@@ -1,6 +1,6 @@
 {
   "name": "apiz-ng",
-  "version": "4.0.5",
+  "version": "5.0.0",
   "description": "An API manager based on Proxy",
   "main": "dist/apiz.cjs.js",
   "module": "dist/apiz.esm.js",
