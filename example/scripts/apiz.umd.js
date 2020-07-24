@@ -313,6 +313,7 @@
 
 	exports.APIz = APIz;
 	exports.config = config;
+	exports.querystring = querystring;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

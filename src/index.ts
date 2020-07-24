@@ -8,3 +8,5 @@ config({
 });
 
 export * from './core';
+
+export * from './querystring';

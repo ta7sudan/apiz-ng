@@ -305,5 +305,5 @@ config({
   defaultResponseType: 'json'
 });
 
-export { APIz, config };
+export { APIz, config, querystring };
 //# sourceMappingURL=apiz.esm.js.map
